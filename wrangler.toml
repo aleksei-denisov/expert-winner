@@ -9,10 +9,11 @@ directory = "./public"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
-# 1) npx wrangler kv namespace create STATE
-# 2) paste the printed id below
+# KV namespace "verbrauch-expert".
+# binding must stay "STATE": it is the variable name the code uses (env.STATE),
+# not the namespace's name.
 [[kv_namespaces]]
-binding = "verbrauch-expert"
+binding = "STATE"
 id = "09133ec43a6d4c16af62ea865b7292ac"
 
 # APP_PASSWORD: set it in the dashboard (Settings -> Variables and Secrets),
