@@ -226,6 +226,73 @@ function nkBind(){
   $('n_save').onclick=()=>{N.monthly=+$('n_m').value;save('Сохранено.');};
 }
 
+
+/* ---------- rent ---------- */
+function norm(){ S.rent = S.rent || {monthly:0, payments:[]}; S.nk = S.nk || {monthly:0,payments:[]}; }
+function rentView(){
+  norm(); const R=S.rent, p=[...R.payments].sort((a,b)=>pd(a.d)-pd(b.d));
+  const y=today().slice(0,4), paidY=p.filter(x=>x.d.startsWith(y)).reduce((s,x)=>s+x.eur,0);
+  const curK=ym(Date.now()), paidNow=p.some(x=>ym(pd(x.d))===curK);
+  const byYear={}; p.forEach(x=>{const k=x.d.slice(0,4);byYear[k]=(byYear[k]||0)+x.eur;});
+  return `
+  <div class="card"><h2>🏡 Платёж аренды</h2>
+  <form id="f_rent"><input type="date" id="d" value="${today()}" required><input type="number" step="any" id="eur" placeholder="€" value="${R.monthly||''}" required><input id="note" placeholder="комментарий (необязательно)"><button>Добавить</button></form>
+  ${R.monthly?`<p class="mut">Аренда: ${fmt(R.monthly,2)} €/мес · <a href="#" id="quick" style="color:var(--ac)">внести за ${ymLabel(curK)}</a></p>`:''}</div>
+  <div class="kpis">
+  <div class="kpi"><span>${ymLabel(curK)}</span><b class="${paidNow?'ok':'warn'}">${paidNow?'оплачено':'не оплачено'}</b><span>${R.monthly?fmt(R.monthly,2)+' €/мес':'задайте сумму в настройках'}</span></div>
+  <div class="kpi"><span>Оплачено в ${y}</span><b>${fmt(paidY,2)} €</b><span>${p.filter(x=>x.d.startsWith(y)).length} платежей</span></div>
+  </div>
+  <div class="card"><h2>По годам</h2><table><tr><th>Год</th><th>Оплачено</th></tr>${Object.keys(byYear).sort().reverse().map(k=>`<tr><td>${k}</td><td>${fmt(byYear[k],2)} €</td></tr>`).join('')||'<tr><td colspan=2 class="mut">Пока нет платежей</td></tr>'}</table></div>
+  <div class="card"><h2>Платежи</h2><table><tr><th>Дата</th><th>Комментарий</th><th>€</th><th></th></tr>${p.map(x=>`<tr><td>${fd(x.d)}</td><td style="text-align:left">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td><button class="ghost" data-del="${R.payments.indexOf(x)}">✕</button></td></tr>`).reverse().join('')}</table></div>
+  <div class="card"><details><summary>Настройки</summary><div class="set"><div><label>Аренда в месяц (Kaltmiete), €</label><input id="r_m" type="number" step="any" value="${R.monthly}"></div></div><button id="r_save" style="margin-top:10px">Сохранить</button></details></div>`;
+}
+function rentBind(){
+  const R=S.rent;
+  $('f_rent').onsubmit=e=>{e.preventDefault();const d=$('d').value,eur=+$('eur').value;if(!d||!eur)return;R.payments.push({d,eur,note:$('note').value.trim()});save('Платёж добавлен.');};
+  if($('quick')) $('quick').onclick=e=>{e.preventDefault();R.payments.push({d:today(),eur:R.monthly,note:'Miete '+ymLabel(ym(Date.now()))});save('Платёж добавлен.');};
+  delBind(i=>{R.payments.splice(+i,1);});
+  $('r_save').onclick=()=>{R.monthly=+$('r_m').value;save('Сохранено.');};
+}
+
+/* ---------- summary ---------- */
+const SERIES=[['rent','Аренда','#7c3aed'],['nk','Nebenkosten','#0891b2'],['power','Свет','#1d5fd1'],['water','Вода','#06b6d4'],['oil','Масло','#c2410c']];
+function summaryCalc(){
+  norm(); const m=new Map(), add=(k,cat,v)=>{if(!v)return;if(!m.has(k))m.set(k,{key:k});const o=m.get(k);o[cat]=(o[cat]||0)+v;};
+  for(const id of ['power','water']){const M=S.meters[id]; if(!M||M.nk) continue; meterCalc(M).months.forEach(o=>add(o.key,id,o.cost));}
+  if(!S.oil.nk){const c=oilCalc(); if(c.ppl) c.months.forEach(o=>add(o.key,'oil',o.qty*c.ppl));}
+  S.rent.payments.forEach(x=>add(ym(pd(x.d)),'rent',x.eur));
+  S.nk.payments.forEach(x=>add(ym(pd(x.d)),'nk',x.eur));
+  const keys=[...m.keys()]; if(!keys.length) return {months:[]};
+  const lo=Math.min(...keys), hi=Math.max(...keys,ym(Date.now())), months=[];
+  for(let k=lo;k<=hi;k++){const o=m.get(k)||{key:k}; o.total=SERIES.reduce((s,[c])=>s+(o[c]||0),0); o.label=ymLabel(k); months.push(o);}
+  const cur=ym(Date.now()), full=months.filter(o=>o.key<cur && o.total>0);
+  const avg={}; SERIES.forEach(([c])=>avg[c]=full.length?full.reduce((s,o)=>s+(o[c]||0),0)/full.length:0);
+  avg.total=SERIES.reduce((s,[c])=>s+avg[c],0);
+  return {months, full, avg};
+}
+function summaryView(){
+  const c=summaryCalc();
+  if(!c.months.length) return '<div class="card">Пока нет данных о расходах.</div>';
+  const y=today().slice(0,4), yearSum=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.total,0);
+  const via=[]; for(const id in S.meters) if(S.meters[id].nk) via.push(S.meters[id].name); if(S.oil.nk) via.push('масло');
+  return `
+  <div class="kpis">
+  <div class="kpi"><span>В среднем в месяц</span><b>${fmt(c.avg.total)} €</b><span>по ${c.full.length} заверш. мес.</span></div>
+  <div class="kpi"><span>Всего в ${y}</span><b>${fmt(yearSum)} €</b><span>с учётом текущего месяца</span></div>
+  </div>
+  <div class="card"><h2>Расходы на дом по месяцам, €</h2><canvas id="ch" height="260"></canvas></div>
+  <div class="card"><h2>Среднее в месяц по статьям</h2><table><tr><th>Статья</th><th>€/мес</th><th>доля</th></tr>${SERIES.filter(([k])=>c.avg[k]).map(([k,l])=>`<tr><td>${l}</td><td>${fmt(c.avg[k],2)}</td><td>${fmt(c.avg[k]/c.avg.total*100)}%</td></tr>`).join('')}<tr><td><b>Итого</b></td><td><b>${fmt(c.avg.total,2)}</b></td><td></td></tr></table>
+  <p class="mut">Свет, вода и масло — фактическое потребление × цена (интерполяция по показаниям). Аренда и Nebenkosten — по датам платежей. Среднее — только по завершённым месяцам.${via.length?' '+esc(via.join(', '))+' отмечены «через Nebenkosten», поэтому отдельно не считаются — они уже в платежах арендодателю.':''}</p></div>
+  <div class="card"><h2>По месяцам</h2><table><tr><th>Месяц</th>${SERIES.map(([,l])=>`<th>${l}</th>`).join('')}<th>Итого</th></tr>${c.months.map(o=>`<tr><td>${o.label}</td>${SERIES.map(([k])=>`<td>${o[k]?fmt(o[k]):'—'}</td>`).join('')}<td><b>${fmt(o.total)}</b></td></tr>`).reverse().join('')}</table></div>`;
+}
+function summaryBind(){
+  const c=summaryCalc(); if(!c.months.length||!window.Chart) return;
+  const dark=matchMedia('(prefers-color-scheme:dark)').matches, grid=dark?'#2b313a':'#e5e7eb', tx=dark?'#9aa1ab':'#6b7280';
+  const ds=SERIES.filter(([k])=>c.months.some(o=>o[k])).map(([k,l,col])=>({label:l,data:c.months.map(o=>+(o[k]||0).toFixed(2)),backgroundColor:col,stack:'s'}));
+  ds.push({label:'Среднее',type:'line',data:c.months.map(()=>+c.avg.total.toFixed(2)),borderColor:tx,borderDash:[5,4],pointRadius:0,borderWidth:2});
+  chart=new Chart($('ch'),{type:'bar',data:{labels:c.months.map(o=>o.label),datasets:ds},options:{plugins:{legend:{labels:{color:tx,boxWidth:12}}},scales:{x:{stacked:true,ticks:{color:tx},grid:{display:false}},y:{stacked:true,ticks:{color:tx},grid:{color:grid},beginAtZero:true}}}});
+}
+
 /* ---------- shared ---------- */
 function delBind(fn){
   $('view').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
@@ -240,13 +307,16 @@ function drawChart(labels,data,fc,norm){
   if(norm) ds.push({label:'Норма',type:'line',data:norm,borderColor:'#c2410c',borderDash:[5,4],pointRadius:0,borderWidth:2});
   chart=new Chart($('ch'),{type:'bar',data:{labels,datasets:ds},options:{plugins:{legend:{display:!!norm,labels:{color:tx}}},scales:{x:{ticks:{color:tx},grid:{display:false}},y:{ticks:{color:tx},grid:{color:grid},beginAtZero:true}}}});
 }
-const TABS=[['power','⚡ Свет'],['water','💧 Вода'],['oil','🛢️ Масло'],['nk','🧾 Nebenkosten']];
+const TABS=[['sum','📊 Итого'],['power','⚡ Свет'],['water','💧 Вода'],['oil','🛢️ Масло'],['rent','🏡 Аренда'],['nk','🧾 Nebenkosten']];
 function render(){
   if(!TABS.some(t=>t[0]===tab)) tab='power';
   $('tabs').innerHTML=TABS.map(([id,l])=>`<button class="${id===tab?'on':''}" data-t="${id}">${l}</button>`).join('');
   $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;try{history.replaceState(null,'','#'+tab);}catch(e){}render();});
   if(chart){chart.destroy();chart=null;}
-  if(tab==='oil'){$('view').innerHTML=oilView();oilBind();}
+  norm();
+  if(tab==='sum'){$('view').innerHTML=summaryView();summaryBind();}
+  else if(tab==='rent'){$('view').innerHTML=rentView();rentBind();}
+  else if(tab==='oil'){$('view').innerHTML=oilView();oilBind();}
   else if(tab==='nk'){$('view').innerHTML=nkView();nkBind();}
   else {$('view').innerHTML=meterView(tab);meterBind(tab);}
 }
