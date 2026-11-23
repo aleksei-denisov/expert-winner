@@ -17,9 +17,9 @@ wrangler.toml       — конфигурация воркера
 2. Вставьте ID в `wrangler.toml` вместо `REPLACE_WITH_KV_NAMESPACE_ID` и закоммитьте.
 3. **Воркер:** Workers & Pages → *Create* → *Import a repository* → выберите `expert-winner`.
    Build command оставьте пустым, deploy command — `npx wrangler deploy`.
-4. **Токен:** в настройках воркера → Settings → Variables and Secrets → *Add* →
-   тип **Secret**, имя `API_TOKEN`, значение — длинная случайная строка (это ваш пароль).
-5. Откройте адрес воркера (`https://home-meters.<ваш-аккаунт>.workers.dev`), введите токен.
+4. **Пароль:** в настройках воркера → Settings → Variables and Secrets → *Add* →
+   тип **Secret**, имя `APP_PASSWORD`, значение — ваш пароль.
+5. Откройте адрес воркера (`https://home-meters.<ваш-аккаунт>.workers.dev`) и войдите паролем.
 
 ### Вариант B — из терминала
 
@@ -27,11 +27,11 @@ wrangler.toml       — конфигурация воркера
 npm install
 npx wrangler login
 npx wrangler kv namespace create STATE     # вставить id в wrangler.toml
-npx wrangler secret put API_TOKEN          # ввести пароль
+npx wrangler secret put APP_PASSWORD       # ввести пароль
 npx wrangler deploy
 ```
 
-Локальный запуск: создайте `.dev.vars` со строкой `API_TOKEN=test` и выполните `npm run dev`.
+Локальный запуск: создайте `.dev.vars` со строкой `APP_PASSWORD=test` и выполните `npm run dev`.
 
 ## Данные
 
@@ -42,4 +42,10 @@ npx wrangler deploy
 - Если сохранить с двух устройств одновременно, второе получит 409 и перезагрузит свежие данные —
   ничего не затрётся молча.
 
-Без токена воркер не отдаёт и не принимает данные; если секрет `API_TOKEN` не задан, API закрыт полностью.
+## Вход
+
+- Вход по паролю (секрет `APP_PASSWORD`). После входа браузер получает защищённую cookie на 90 дней —
+  пароль на этом устройстве больше не спрашивается. Кнопка «Выйти» — справа вверху.
+- Неверный пароль отвечает с задержкой в 1 секунду, чтобы затруднить подбор.
+- Смена `APP_PASSWORD` разлогинивает все устройства.
+- Если секрет не задан, данные недоступны никому.
