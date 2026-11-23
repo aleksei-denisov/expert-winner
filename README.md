@@ -18,7 +18,8 @@ wrangler.toml       — конфигурация воркера
 3. **Воркер:** Workers & Pages → *Create* → *Import a repository* → выберите `expert-winner`.
    Build command оставьте пустым, deploy command — `npx wrangler deploy`.
 4. **Пароль:** в настройках воркера → Settings → Variables and Secrets → *Add* →
-   тип **Secret**, имя `APP_PASSWORD`, значение — ваш пароль.
+   тип **Text** (или Secret), имя `APP_PASSWORD`, значение — ваш пароль.
+   Не вписывайте пароль в `wrangler.toml` — он попадёт в GitHub.
 5. Откройте адрес воркера (`https://home-meters.<ваш-аккаунт>.workers.dev`) и войдите паролем.
 
 ### Вариант B — из терминала
