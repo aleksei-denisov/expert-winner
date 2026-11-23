@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Дом: счётчики и расходы</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#6b7280;--ac:#1d5fd1;--ok:#14804a;--warn:#c2410c;--bd:#e5e7eb}
+@media(prefers-color-scheme:dark){:root{--bg:#111418;--card:#1a1e24;--tx:#e8eaed;--mut:#9aa1ab;--ac:#6ea0ff;--ok:#4ade80;--warn:#fb923c;--bd:#2b313a}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--tx)}
+main{max-width:720px;margin:auto;padding:12px 16px 40px}
+h1{font-size:20px;margin:4px 0 10px}h2{font-size:16px;margin:0 0 10px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:2}
+.tabs button{background:var(--card);color:var(--tx);border:1px solid var(--bd);white-space:nowrap}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.kpi b{display:block;font-size:20px}.kpi span{color:var(--mut);font-size:13px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.mut{color:var(--mut);font-size:12px}
+form{display:flex;gap:8px;flex-wrap:wrap}
+input,select{font:inherit;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);min-width:0;flex:1}
+button{font:inherit;padding:9px 14px;border:0;border-radius:10px;background:var(--ac);color:#fff;cursor:pointer}
+button.ghost{background:none;color:var(--mut);padding:4px 8px}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:7px 4px;border-bottom:1px solid var(--bd);text-align:right}td:first-child,th:first-child{text-align:left}
+th{color:var(--mut);font-weight:500}
+.set{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.set label{font-size:13px;color:var(--mut)}.set input,.set select{width:100%}
+.bar{height:10px;background:var(--bd);border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--ac)}
+details summary{cursor:pointer;font-weight:600}
+#status{font-size:12px;color:var(--mut);min-height:16px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<main>
+<h1>🏠 Дом: счётчики и расходы</h1>
+<div class="tabs" id="tabs"></div>
+<div id="status"></div>
+<div id="view"></div>
+</main>
+
+<script id="state" type="application/json">{"v":2,"meters":{"power":{"name":"Электричество","icon":"⚡","unit":"кВт·ч","price":28.11,"priceUnit":"ct","base":190.11,"norm":3500,"abs":98,"nk":false,"readings":[["2026-06-23",3845],["2026-10-10",4849],["2026-10-31",5052],["2026-11-23",5229]]},"water":{"name":"Вода (холодная)","icon":"💧","unit":"м³","price":4.5,"priceUnit":"eur","base":0,"norm":0,"abs":0,"nk":true,"readings":[]}},"oil":{"tankL":3000,"heightCm":150,"nk":false,"entries":[]},"nk":{"monthly":0,"payments":[]}}</script>
+
+<script>
+let S = JSON.parse(document.getElementById('state').textContent);
+let tab = 'power', chart, REV = 0, TOKEN = '';
+try { TOKEN = localStorage.getItem('home_token') || ''; } catch(e){}
+try { location.hash && (tab = location.hash.slice(1)); } catch(e){}
+const $ = id => document.getElementById(id);
+const DAY = 864e5, MON = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+const pd = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y,m-1,d); };
+const today = () => new Date().toISOString().slice(0,10);
+const fmt = (n,d=0) => (isFinite(n)?n:0).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fd = s => { const [y,m,d]=s.split('-'); return `${d}.${m}.${y.slice(2)}`; };
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ym = t => { const d=new Date(t); return d.getUTCFullYear()*12+d.getUTCMonth(); };
+const ymLabel = k => MON[k%12]+' '+String(Math.floor(k/12)).slice(2);
+const dim = k => new Date(Date.UTC(Math.floor(k/12),k%12+1,0)).getUTCDate();
+
+/* ---------- daily-rate segments -> months ---------- */
+// segs: [{t0,t1,rate}] ; returns months with qty, days, forecast flag
+function toMonths(segs, forecastRate){
+  const m = new Map(); if (!segs.length) return [];
+  const start = segs[0].t0, end = segs[segs.length-1].t1;
+  let i = 0;
+  for (let t=start; t<end; t+=DAY){
+    while (t>=segs[i].t1) i++;
+    const k=ym(t); if(!m.has(k)) m.set(k,{key:k,qty:0,days:0,fc:false});
+    const o=m.get(k); o.qty+=segs[i].rate; o.days++;
+  }
+  const lk = ym(end-DAY);
+  if (forecastRate!=null && m.has(lk)){ const o=m.get(lk); if (o.days<dim(lk)){ o.fcQty=o.qty+forecastRate*(dim(lk)-o.days); o.fc=true; } }
+  return [...m.values()].map(o=>({...o,label:ymLabel(o.key),dim:dim(o.key),partial:o.days<dim(o.key)}));
+}
+
+/* ---------- meters ---------- */
+function meterCalc(M){
+  const r=[...M.readings].sort((a,b)=>pd(a[0])-pd(b[0]));
+  const ppu = M.priceUnit==='ct'? M.price/100 : M.price;
+  const out={r,ppu,months:[]};
+  if (r.length<2) return out;
+  const segs=[]; for(let i=1;i<r.length;i++){ const t0=pd(r[i-1][0]),t1=pd(r[i][0]); if(t1>t0) segs.push({t0,t1,rate:(r[i][1]-r[i-1][1])/((t1-t0)/DAY)}); }
+  if(!segs.length) return out;
+  const t0=segs[0].t0,t1=segs[segs.length-1].t1;
+  out.days=(t1-t0)/DAY; out.used=r[r.length-1][1]-r[0][1]; out.daily=out.used/out.days; out.year=out.daily*365;
+  out.lastRate=segs[segs.length-1].rate;
+  out.months=toMonths(segs,out.lastRate).map(o=>({...o,cost:o.qty*ppu+M.base/12*o.days/o.dim,norm:M.norm/365*o.days}));
+  out.costTotal=out.used*ppu+M.base*out.days/365;
+  out.yearCost=out.year*ppu+M.base;
+  out.paid=M.abs*out.days/30.4375;
+  return out;
+}
+
+function meterView(id){
+  const M=S.meters[id], c=meterCalc(M), u=M.unit;
+  let k='';
+  if(c.months.length){
+    const pct=M.norm?c.year/M.norm*100:null, cls=pct==null||pct<=100?'ok':'warn';
+    k+=`<div class="kpi"><span>Прогноз за год</span><b class="${cls}">${fmt(c.year,u==='м³'?1:0)} ${u}</b>${pct!=null?`<span>${fmt(pct)}% от нормы ${fmt(M.norm)}</span><div class="bar"><i style="width:${Math.min(pct,100)}%"></i></div>`:'<span>норма не задана</span>'}</div>`;
+    k+=`<div class="kpi"><span>Средний расход</span><b>${fmt(c.daily,u==='м³'?3:1)} ${u}/день</b><span>последний период: ${fmt(c.lastRate,u==='м³'?3:1)}</span></div>`;
+    k+=`<div class="kpi"><span>Стоимость за год (прогноз)</span><b>${fmt(c.yearCost)} €</b><span>≈ ${fmt(c.yearCost/12)} €/мес</span></div>`;
+    if(M.abs){const bal=c.paid-c.costTotal;k+=`<div class="kpi"><span>Abschlag vs факт</span><b class="${bal>=0?'ok':'warn'}">${bal>=0?'+':''}${fmt(bal)} €</b><span>${bal>=0?'переплата (вернут)':'недоплата'} за ${fmt(c.days)} дн.</span></div>`;}
+    else k+=`<div class="kpi"><span>Потрачено с первого показания</span><b>${fmt(c.costTotal)} €</b><span>${fmt(c.used,u==='м³'?1:0)} ${u} за ${fmt(c.days)} дн.</span></div>`;
+  } else k='<div class="kpi" style="grid-column:1/-1"><span>Внесите минимум 2 показания, чтобы появились расчёты.</span></div>';
+  const dp=u==='м³'?2:0;
+  return `
+  <div class="card"><h2>${M.icon} Новое показание</h2>
+  <form id="f_read"><input type="date" id="d" value="${today()}" required><input type="number" step="any" id="v" placeholder="${u}" inputmode="decimal" required><button>Добавить</button></form></div>
+  <div class="kpis">${k}</div>
+  ${c.months.length?`<div class="card"><h2>По месяцам</h2><canvas id="ch" height="220"></canvas></div>
+  <div class="card"><h2>Месяцы и стоимость</h2><table><tr><th>Месяц</th><th>${u}</th>${M.norm?'<th>Норма</th>':''}<th>€</th></tr>${c.months.map(o=>{
+    const q=o.fc?o.fcQty:o.qty, cost=o.fc?o.fcQty*c.ppu+M.base/12:o.cost, n=o.fc?M.norm/365*o.dim:o.norm;
+    return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td class="${!M.norm||q<=n?'':'warn'}">${fmt(q,dp)}</td>${M.norm?`<td>${fmt(n,dp)}</td>`:''}<td>${fmt(cost,2)}</td></tr>`}).join('')}</table>
+  <p class="mut">Между показаниями расход считается равномерным. * — текущий месяц, прогноз по последнему темпу.</p></div>`:''}
+  <div class="card"><h2>Показания</h2><table><tr><th>Дата</th><th>Показание</th><th>${u}/день</th><th></th></tr>${c.r.map((x,i)=>{
+    const rate=i?(x[1]-c.r[i-1][1])/((pd(x[0])-pd(c.r[i-1][0]))/DAY):null;
+    return `<tr><td>${fd(x[0])}</td><td>${fmt(x[1],dp)}</td><td>${rate==null?'—':fmt(rate,u==='м³'?3:1)}</td><td><button class="ghost" data-del="${x[0]}">✕</button></td></tr>`}).reverse().join('')}</table></div>
+  <div class="card"><details><summary>Тариф</summary><div class="set">
+  <div><label>Цена за ${u}, ${M.priceUnit==='ct'?'ct':'€'}</label><input id="s_price" type="number" step="any" value="${M.price}"></div>
+  <div><label>Grundpreis, €/год</label><input id="s_base" type="number" step="any" value="${M.base}"></div>
+  <div><label>Норма, ${u}/год (0 = нет)</label><input id="s_norm" type="number" step="any" value="${M.norm}"></div>
+  <div><label>Abschlag, €/мес (0 = нет)</label><input id="s_abs" type="number" step="any" value="${M.abs}"></div>
+  <div style="grid-column:1/-1"><label><input type="checkbox" id="s_nk" ${M.nk?'checked':''} style="flex:none;width:auto"> оплачивается через Nebenkosten арендодателю</label></div>
+  </div><button id="s_save" style="margin-top:10px">Сохранить</button></details></div>`;
+}
+function meterBind(id){
+  const M=S.meters[id], c=meterCalc(M);
+  $('f_read').onsubmit=e=>{e.preventDefault();const d=$('d').value,v=Number($('v').value);if(!d||!isFinite(v))return;M.readings=M.readings.filter(x=>x[0]!==d);M.readings.push([d,v]);save('Показание добавлено.');};
+  delBind(d=>{M.readings=M.readings.filter(x=>x[0]!==d);});
+  $('s_save').onclick=()=>{Object.assign(M,{price:+$('s_price').value,base:+$('s_base').value,norm:+$('s_norm').value,abs:+$('s_abs').value,nk:$('s_nk').checked});save('Тариф сохранён.');};
+  if(c.months.length){
+    const full=c.months.filter(o=>!o.partial||o.fc);
+    drawChart(full.map(o=>o.label+(o.fc?'*':'')),full.map(o=>+(o.fc?o.fcQty:o.qty).toFixed(2)),full.map(o=>o.fc),M.norm?full.map(o=>+(M.norm/365*o.dim).toFixed(1)):null);
+  }
+}
+
+/* ---------- oil ---------- */
+function oilCalc(){
+  const O=S.oil, toL=cm=>cm/O.heightCm*O.tankL;
+  const e=[...O.entries].sort((a,b)=>pd(a.d)-pd(b.d)||(a.cm!=null)-(b.cm!=null));
+  const lv=e.filter(x=>x.cm!=null), fills=e.filter(x=>x.l);
+  const out={e,lv,fills,toL,months:[]};
+  const lastFill=fills[fills.length-1]; out.ppl=lastFill&&lastFill.eur?lastFill.eur/lastFill.l:null;
+  if(lv.length) out.nowL=toL(lv[lv.length-1].cm);
+  if(lv.length<2) return out;
+  const segs=[];
+  for(let i=1;i<lv.length;i++){
+    const t0=pd(lv[i-1].d),t1=pd(lv[i].d); if(t1<=t0) continue;
+    const added=fills.filter(f=>pd(f.d)>=t0&&pd(f.d)<=t1&&!(pd(f.d)===t0&&e.indexOf(f)<e.indexOf(lv[i-1]))).reduce((s,f)=>s+f.l,0);
+    const used=Math.max(0,toL(lv[i-1].cm)+added-toL(lv[i].cm));
+    segs.push({t0,t1,rate:used/((t1-t0)/DAY),used});
+  }
+  if(!segs.length) return out;
+  out.used=segs.reduce((s,x)=>s+x.used,0); out.days=(segs[segs.length-1].t1-segs[0].t0)/DAY; out.daily=out.used/out.days;
+  // recent rate: last ~60 days of segments for a less noisy "now" estimate
+  const tEnd=segs[segs.length-1].t1; let u=0,dd=0; for(let i=segs.length-1;i>=0;i--){const s=segs[i];u+=s.used;dd+=(s.t1-s.t0)/DAY;if(dd>=60)break;}
+  out.recent=u/dd; out.daysLeft=out.recent>0?out.nowL/out.recent:null;
+  out.months=toMonths(segs,out.recent);
+  return out;
+}
+function oilView(){
+  const O=S.oil,c=oilCalc();
+  let k='';
+  if(c.nowL!=null) k+=`<div class="kpi"><span>Сейчас в баке (≈)</span><b>${fmt(c.nowL)} л</b><span>${fmt(c.nowL/O.tankL*100)}% от ${fmt(O.tankL)} л</span><div class="bar"><i style="width:${Math.min(100,c.nowL/O.tankL*100)}%"></i></div></div>`;
+  if(c.daily!=null){
+    k+=`<div class="kpi"><span>Расход (последние ~60 дн.)</span><b>${fmt(c.recent,1)} л/день</b><span>в среднем за всё время: ${fmt(c.daily,1)}</span></div>`;
+    k+=`<div class="kpi"><span>Хватит примерно на</span><b class="${c.daysLeft!=null&&c.daysLeft<45?'warn':''}">${c.daysLeft!=null?fmt(c.daysLeft)+' дн.':'—'}</b><span>${c.daysLeft!=null?'до ≈ '+fd(new Date(Date.now()+c.daysLeft*DAY).toISOString().slice(0,10))+' при текущем темпе':''}</span></div>`;
+    k+=`<div class="kpi"><span>Стоимость в месяц (≈)</span><b>${c.ppl?fmt(c.recent*30.4*c.ppl)+' €':'—'}</b><span>${c.ppl?'по цене последней заправки '+fmt(c.ppl,2)+' €/л':'внесите заправку с ценой'}</span></div>`;
+  }
+  if(!k) k='<div class="kpi" style="grid-column:1/-1"><span>Внесите минимум 2 замера щупом, чтобы появился расход.</span></div>';
+  return `
+  <div class="card"><h2>🛢️ Замер щупом</h2>
+  <form id="f_lv"><input type="date" id="d" value="${today()}" required><input type="number" step="any" id="cm" placeholder="см" inputmode="decimal" required><button>Добавить</button></form>
+  <p class="mut" id="cmhint">≈ — л</p>
+  <h2 style="margin-top:14px">Заправка</h2>
+  <form id="f_fill"><input type="date" id="fd" value="${today()}" required><input type="number" step="any" id="fl" placeholder="литров" required><input type="number" step="any" id="fe" placeholder="€ всего"><button>Добавить</button></form>
+  <p class="mut">После заправки сделайте и новый замер щупом — тогда расход посчитается точнее.</p></div>
+  <div class="kpis">${k}</div>
+  ${c.months.length?`<div class="card"><h2>Расход по месяцам, л</h2><canvas id="ch" height="220"></canvas>
+  <table style="margin-top:10px"><tr><th>Месяц</th><th>л</th><th>€ (≈)</th></tr>${c.months.map(o=>{const q=o.fc?o.fcQty:o.qty;return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td>${fmt(q)}</td><td>${c.ppl?fmt(q*c.ppl,2):'—'}</td></tr>`}).join('')}</table>
+  <p class="mut">Замеры щупом приблизительны: месяцы между редкими замерами сглажены, отдельные значения могут «скакать». Тренд за несколько месяцев надёжнее.</p></div>`:''}
+  <div class="card"><h2>Записи</h2><table><tr><th>Дата</th><th>Что</th><th>Литры</th><th></th></tr>${c.e.map((x,i)=>`<tr><td>${fd(x.d)}</td><td>${x.cm!=null?'замер '+fmt(x.cm,1)+' см':'заправка'+(x.eur?' · '+fmt(x.eur,2)+' €':'')}</td><td>${x.cm!=null?'≈ '+fmt(c.toL(x.cm)):'+'+fmt(x.l)}</td><td><button class="ghost" data-del="${O.entries.indexOf(x)}">✕</button></td></tr>`).reverse().join('')}</table></div>
+  <div class="card"><details><summary>Бак</summary><div class="set">
+  <div><label>Объём бака, л</label><input id="o_l" type="number" value="${O.tankL}"></div>
+  <div><label>Высота при полном баке, см</label><input id="o_h" type="number" step="any" value="${O.heightCm}"></div>
+  <div style="grid-column:1/-1"><label><input type="checkbox" id="o_nk" ${O.nk?'checked':''} style="flex:none;width:auto"> оплачивается через Nebenkosten арендодателю</label></div>
+  </div><p class="mut">Пересчёт см → литры линейный (подходит для прямоугольных и батарейных баков). Если на баке или щупе есть таблица пересчёта — скажите, добавлю её.</p>
+  <button id="o_save">Сохранить</button></details></div>`;
+}
+function oilBind(){
+  const O=S.oil,c=oilCalc();
+  $('cm').oninput=()=>{const v=+$('cm').value;$('cmhint').textContent=v?'≈ '+fmt(c.toL(v))+' л':'≈ — л';};
+  $('f_lv').onsubmit=e=>{e.preventDefault();const d=$('d').value,cm=+$('cm').value;if(!d||!isFinite(cm))return;O.entries=O.entries.filter(x=>!(x.d===d&&x.cm!=null));O.entries.push({d,cm});save('Замер добавлен.');};
+  $('f_fill').onsubmit=e=>{e.preventDefault();const d=$('fd').value,l=+$('fl').value,eur=+$('fe').value||0;if(!d||!l)return;O.entries.push({d,l,eur});save('Заправка добавлена.');};
+  delBind(i=>{O.entries.splice(+i,1);});
+  $('o_save').onclick=()=>{O.tankL=+$('o_l').value;O.heightCm=+$('o_h').value;O.nk=$('o_nk').checked;save('Бак сохранён.');};
+  if(c.months.length){const full=c.months.filter(o=>!o.partial||o.fc);drawChart(full.map(o=>o.label+(o.fc?'*':'')),full.map(o=>Math.round(o.fc?o.fcQty:o.qty)),full.map(o=>o.fc),null);}
+}
+
+/* ---------- Nebenkosten ---------- */
+function nkView(){
+  const N=S.nk, p=[...N.payments].sort((a,b)=>pd(a.d)-pd(b.d));
+  const byYear={}; p.forEach(x=>{const y=x.d.slice(0,4);byYear[y]=(byYear[y]||0)+x.eur;});
+  const y=today().slice(0,4), paidY=byYear[y]||0;
+  // tracked costs of items marked as via landlord, this calendar year
+  let tracked=0, items=[];
+  for(const id in S.meters){const M=S.meters[id];if(!M.nk)continue;const c=meterCalc(M);const v=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.cost,0);tracked+=v;items.push(M.name+': '+fmt(v,2)+' €');}
+  if(S.oil.nk){const c=oilCalc();if(c.ppl){const v=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.qty*c.ppl,0);tracked+=v;items.push('Масло: '+fmt(v,2)+' €');}}
+  return `
+  <div class="card"><h2>🧾 Платёж арендодателю</h2>
+  <form id="f_nk"><input type="date" id="d" value="${today()}" required><input type="number" step="any" id="eur" placeholder="€" required><input id="note" placeholder="за что (необязательно)"><button>Добавить</button></form>
+  ${N.monthly?`<p class="mut">Ежемесячная предоплата: ${fmt(N.monthly,2)} € · <a href="#" id="quick" style="color:var(--ac)">внести за этот месяц</a></p>`:''}</div>
+  <div class="kpis">
+  <div class="kpi"><span>Оплачено в ${y}</span><b>${fmt(paidY,2)} €</b><span>${p.filter(x=>x.d.startsWith(y)).length} платежей</span></div>
+  <div class="kpi"><span>Расход по счётчикам «через арендодателя» в ${y}</span><b>${items.length?fmt(tracked,2)+' €':'—'}</b><span>${items.length?esc(items.join(' · ')):'отметьте в тарифе воды/масла'}</span></div>
+  </div>
+  <p class="mut" style="margin:-6px 0 14px">В Nebenkosten обычно входит и то, что вы не меряете (вывоз мусора, Grundsteuer, уборка, страховка), поэтому оплачено почти всегда больше, чем «по счётчикам». Самое полезное сравнение — с прошлогодней Abrechnung.</p>
+  <div class="card"><h2>По годам</h2><table><tr><th>Год</th><th>Оплачено</th></tr>${Object.keys(byYear).sort().reverse().map(k=>`<tr><td>${k}</td><td>${fmt(byYear[k],2)} €</td></tr>`).join('')||'<tr><td colspan=2 class="mut">Пока нет платежей</td></tr>'}</table></div>
+  <div class="card"><h2>Платежи</h2><table><tr><th>Дата</th><th>За что</th><th>€</th><th></th></tr>${p.map(x=>`<tr><td>${fd(x.d)}</td><td style="text-align:left">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td><button class="ghost" data-del="${N.payments.indexOf(x)}">✕</button></td></tr>`).reverse().join('')}</table></div>
+  <div class="card"><details><summary>Настройки</summary><div class="set"><div><label>Предоплата в месяц, €</label><input id="n_m" type="number" step="any" value="${N.monthly}"></div></div><button id="n_save" style="margin-top:10px">Сохранить</button></details></div>`;
+}
+function nkBind(){
+  const N=S.nk;
+  $('f_nk').onsubmit=e=>{e.preventDefault();const d=$('d').value,eur=+$('eur').value;if(!d||!eur)return;N.payments.push({d,eur,note:$('note').value.trim()});save('Платёж добавлен.');};
+  if($('quick')) $('quick').onclick=e=>{e.preventDefault();N.payments.push({d:today(),eur:N.monthly,note:'Vorauszahlung '+ymLabel(ym(Date.now()))});save('Платёж добавлен.');};
+  delBind(i=>{N.payments.splice(+i,1);});
+  $('n_save').onclick=()=>{N.monthly=+$('n_m').value;save('Сохранено.');};
+}
+
+/* ---------- shared ---------- */
+function delBind(fn){
+  $('view').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.sure){fn(b.dataset.del);save('Удалено.');} else {b.dataset.sure=1;b.textContent='Удалить?';}
+  });
+}
+function drawChart(labels,data,fc,norm){
+  const dark=matchMedia('(prefers-color-scheme:dark)').matches, grid=dark?'#2b313a':'#e5e7eb', tx=dark?'#9aa1ab':'#6b7280';
+  if(chart) chart.destroy();
+  if(!window.Chart) return;
+  const ds=[{label:'Факт',data,backgroundColor:fc.map(f=>f?'rgba(29,95,209,.45)':'#1d5fd1'),borderRadius:6}];
+  if(norm) ds.push({label:'Норма',type:'line',data:norm,borderColor:'#c2410c',borderDash:[5,4],pointRadius:0,borderWidth:2});
+  chart=new Chart($('ch'),{type:'bar',data:{labels,datasets:ds},options:{plugins:{legend:{display:!!norm,labels:{color:tx}}},scales:{x:{ticks:{color:tx},grid:{display:false}},y:{ticks:{color:tx},grid:{color:grid},beginAtZero:true}}}});
+}
+const TABS=[['power','⚡ Свет'],['water','💧 Вода'],['oil','🛢️ Масло'],['nk','🧾 Nebenkosten']];
+function render(){
+  if(!TABS.some(t=>t[0]===tab)) tab='power';
+  $('tabs').innerHTML=TABS.map(([id,l])=>`<button class="${id===tab?'on':''}" data-t="${id}">${l}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;try{history.replaceState(null,'','#'+tab);}catch(e){}render();});
+  if(chart){chart.destroy();chart=null;}
+  if(tab==='oil'){$('view').innerHTML=oilView();oilBind();}
+  else if(tab==='nk'){$('view').innerHTML=nkView();nkBind();}
+  else {$('view').innerHTML=meterView(tab);meterBind(tab);}
+}
+async function api(method, body){
+  const r = await fetch('/api/state', {method, headers:{'Authorization':'Bearer '+TOKEN,'Content-Type':'application/json'}, body: body?JSON.stringify(body):undefined});
+  if (r.status===401) { showLogin('Неверный токен.'); throw new Error('401'); }
+  return r;
+}
+async function save(msg){
+  render();
+  $('status').textContent='Сохраняю…';
+  try{
+    const r = await api('PUT', {rev: REV, data: S});
+    if (r.status===409){ $('status').textContent='Данные изменились на другом устройстве — загружаю свежие. Повторите ввод.'; await load(); return; }
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    REV = (await r.json()).rev;
+    $('status').textContent = msg+' Сохранено.';
+  }catch(e){ if(e.message!=='401') $('status').textContent='Не удалось сохранить: '+e.message; }
+}
+async function load(){
+  try{
+    const r = await api('GET');
+    if (r.status===404){ REV=0; render(); $('status').textContent='На сервере пока пусто — показаны начальные данные. Первое сохранение запишет их.'; return; }
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json(); S = j.data; REV = j.rev; render(); $('status').textContent='';
+  }catch(e){ if(e.message!=='401') $('status').textContent='Не удалось загрузить: '+e.message; }
+}
+function showLogin(err){
+  $('tabs').innerHTML='';
+  $('view').innerHTML=`<div class="card"><h2>🔑 Вход</h2><form id="f_login"><input type="password" id="tok" placeholder="Токен (API_TOKEN)" required><button>Войти</button></form><p class="mut">${err||'Токен сохранится в этом браузере.'}</p></div>`;
+  $('f_login').onsubmit=e=>{e.preventDefault();TOKEN=$('tok').value.trim();try{localStorage.setItem('home_token',TOKEN);}catch(_){}load();};
+}
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h&&h!==tab){tab=h;render();}});
+if (TOKEN) load(); else showLogin();
+</script>
+</body>
+</html>
