@@ -649,7 +649,7 @@ function barChart(labels,series,line,stacked){
   const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
   chart=new Chart($('ch'),{type:'bar',data:{labels,datasets:ds},options:{maintainAspectRatio:false,animation:rm?false:{duration:300},
     plugins:{legend:{display:ds.length>1,position:'bottom',labels:{color:ink,font,boxWidth:14,boxHeight:14,padding:14}},tooltip:{titleFont:font,bodyFont:{...font,size:14},callbacks:{label:x=>` ${x.dataset.label}: ${fmt(x.parsed.y,x.parsed.y<10?2:0)}`}}},
-    scales:{x:{stacked,ticks:{color:ink,font,maxRotation:0,autoSkip:false},grid:{display:false},border:{color:ink,width:2}},y:{stacked,beginAtZero:true,ticks:{color:ink,font,callback:v=>fmt(v)},grid:{color:grid},border:{display:false}}}}});
+    scales:{x:{stacked,ticks:{color:ink,font,maxRotation:0,autoSkip:false,callback:(v,i)=>{const n=labels.length,step=Math.ceil(n/6);return (i===n-1||(i%step===0&&n-1-i>=step))?labels[i]:'';}},grid:{display:false},border:{color:ink,width:2}},y:{stacked,beginAtZero:true,ticks:{color:ink,font,callback:v=>fmt(v)},grid:{color:grid},border:{display:false}}}}});
 }
 
 /* ---------- app shell ---------- */
