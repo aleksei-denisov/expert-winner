@@ -3,161 +3,196 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F4F6FA" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#E3E5E6">
 <title>Дом: счётчики и расходы</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600&family=Fira+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-/* ---- tokens: design-system/home-meters/MASTER.md ---- */
+/* design-system/home-meters/MASTER.md — v2 «Дом из цветных этажей» */
 :root{
-  --bg:#F4F6FA;--surface:#FFFFFF;--surface-2:#EEF2F7;--text:#0F172A;--text-2:#475569;--border:#E2E8F0;--field:#CBD5E1;
-  --primary:#1E40AF;--on-primary:#FFFFFF;--good:#047857;--bad:#B91C1C;--warn:#B45309;--ring:#1E40AF;
-  --drum:#111827;--drum-text:#F9FAFB;--drum-red:#B91C1C;
-  --s-rent:#6D28D9;--s-nk:#BE185D;--s-power:#1D4ED8;--s-water:#0891B2;--s-oil:#C2410C;
-  --font:'Fira Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'Fira Code',ui-monospace,monospace;
-  color-scheme:light dark;
+  --concrete:#E3E5E6;--power:#FFCC00;--water:#0047AB;--oil:#B23A0A;--rent:#0B6E4F;--nk:#3D4A5C;
+  --s-power:var(--power);--s-water:var(--water);--s-oil:var(--oil);--s-rent:var(--rent);--s-nk:var(--nk);
+  --bad:#C1121F;--plate:#FFFFFF;--plate-ink:#000;--plate-line:#D5D8DA;--plate-mute:#3F4549;
+  --display:'Unbounded',system-ui,sans-serif;--text:'Golos Text',system-ui,-apple-system,sans-serif;
+  --c:var(--concrete);--on:#000;--page:var(--c);--ink:var(--on);--bar:var(--on);
+  color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0F172A;--surface:#192134;--surface-2:#101A34;--text:#F1F5F9;--text-2:#94A3B8;--border:rgba(255,255,255,.08);--field:rgba(255,255,255,.22);
-  --primary:#60A5FA;--on-primary:#0F172A;--good:#34D399;--bad:#F87171;--warn:#FBBF24;--ring:#FFFFFF;
-  --drum:#05080F;--drum-text:#F9FAFB;--drum-red:#991B1B;
-  --s-rent:#A78BFA;--s-nk:#F472B6;--s-power:#60A5FA;--s-water:#67E8F9;--s-oil:#FB923C;
-}}
+body[data-w="power"]{--c:var(--power);--on:#000}
+body[data-w="water"]{--c:var(--water);--on:#fff}
+body[data-w="oil"]{--c:var(--oil);--on:#fff}
+body[data-w="rent"]{--c:var(--rent);--on:#fff}
+body[data-w="nk"]{--c:var(--nk);--on:#fff}
+@media (prefers-color-scheme:dark){
+  :root{color-scheme:dark;--plate:#1A1A1A;--plate-ink:#fff;--plate-line:#2E2E2E;--plate-mute:#C9CDD0;--concrete:#2B2E30;--bad:#FF6B6B}
+  body[data-w]{--page:#000!important;--ink:#fff;--bar:var(--c)}
+  body[data-w] .hero{--ink:var(--on)}
+  body{--s-water:#4D8FE6;--s-oil:#F06A33;--s-rent:#2FB383;--s-nk:#8FA0B8}
+  body[data-w="water"]{--bar:#4D8FE6}body[data-w="oil"]{--bar:#F06A33}body[data-w="rent"]{--bar:#2FB383}body[data-w="nk"]{--bar:#8FA0B8}
+  body[data-w="sum"]{--on:#fff}
+  body[data-w="power"] .hero, body[data-w="power"] .nav a[aria-current]{--ink:#000}
+}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:400 16px/1.5 var(--font);font-variant-numeric:tabular-nums lining-nums}
-.num{font-variant-numeric:tabular-nums lining-nums}
-main{max-width:760px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-svg.i{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+body{--page:var(--c);--ink:var(--on);--bar:var(--on);overflow-x:clip;margin:0;background:var(--page);color:var(--ink);font:400 16px/1.5 var(--text);font-variant-numeric:tabular-nums;transition:background-color .25s}
+main{max-width:640px;margin:0 auto;padding:0 0 calc(120px + env(safe-area-inset-bottom))}
+svg.i{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+::selection{background:var(--ink);color:var(--page)}
+.wrap{padding:0 max(20px,env(safe-area-inset-left)) 0 max(20px,env(safe-area-inset-right))}
 
-/* header + tabs */
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 8px}
-.top h1{font-size:22px;line-height:28px;font-weight:700;margin:0;letter-spacing:-.01em}
-.bar-top{position:sticky;top:0;z-index:5;margin:0 -16px;padding:env(safe-area-inset-top) 16px 0;background:var(--bg);border-bottom:1px solid transparent}
-.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:8px 16px}
-.tabs::-webkit-scrollbar{display:none}
-.tab{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:500 15px/1 var(--font);white-space:nowrap;cursor:pointer;transition:background-color .15s,color .15s}
-.tab[aria-current="page"]{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
-#status{min-height:28px;padding:2px 0 8px;font-size:14px;line-height:20px;color:var(--text-2);font-weight:500}
-#status.err{color:var(--bad)}#status.ok{color:var(--good)}
-#status .link{min-height:0;font-size:14px;margin-left:4px}
-.ferr{margin:2px 0 0;font-size:14px;line-height:20px;font-weight:500}
-.ferr.bad{color:var(--bad)}.ferr.warn{color:var(--warn)}
-input[aria-invalid="true"]{border-color:var(--bad);border-width:2px;padding:10px 11px}
-::selection{background:color-mix(in srgb,var(--primary) 28%,transparent)}
-input{caret-color:var(--primary)}
-.chart{position:relative;height:240px}
-section:focus{outline:none}
+/* hero band: the section colour, in both modes */
+.hero{background:var(--c);color:var(--on);--ink:var(--on);padding:calc(20px + env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) 24px max(20px,env(safe-area-inset-left))}
+.title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 18px}
+.title h1{font:600 44px/1 var(--display);letter-spacing:-.02em;margin:0}
+.title span{font-weight:500;font-size:15px}
+.since{font-size:16px;font-weight:500;margin:12px 0 0}
 
-/* blocks */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
-h2{font-size:17px;line-height:24px;font-weight:600;margin:0 0 12px}
-.cap{font-size:14px;line-height:20px;color:var(--text-2);font-weight:500}
-.note{font-size:14px;line-height:20px;color:var(--text-2);margin:12px 0 0}
-.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
-
-/* hero: mechanical counter */
-.hero{display:flex;flex-direction:column;gap:12px}
+/* mechanical counter */
 .odo-row{display:flex;align-items:flex-end;gap:10px}
-.odo{display:inline-flex;gap:3px;padding:6px;background:#0B0F19;border-radius:10px;flex:none}
-.odo span{display:grid;place-items:center;width:clamp(28px,8.2vw,40px);height:clamp(42px,12vw,56px);background:linear-gradient(var(--drum) 0 46%,#000 46% 54%,var(--drum) 54%);border-radius:4px;color:var(--drum-text);font:600 clamp(22px,6.8vw,32px)/1 var(--mono);box-shadow:inset 0 2px 0 rgba(255,255,255,.08),inset 0 -2px 0 rgba(0,0,0,.4)}
-.odo span.red{background:linear-gradient(var(--drum-red) 0 46%,#5b0d0d 46% 54%,var(--drum-red) 54%)}
-.odo-u{font:600 17px/1 var(--font);color:var(--text-2);padding-bottom:8px}
-.hero-meta{display:flex;flex-wrap:wrap;gap:4px 16px}
-.hero-meta b{font-weight:600}
+.odo{display:inline-flex;gap:4px;padding:7px;background:#000;border-radius:8px;flex:none}
+.odo span{display:grid;place-items:center;width:clamp(30px,9vw,44px);height:clamp(46px,13.5vw,62px);background:linear-gradient(#1F2326 0 47%,#000 47% 53%,#1F2326 53%);border-radius:4px;color:#fff;font:600 clamp(22px,7vw,32px)/1 var(--display)}
+.odo span.red{background:linear-gradient(#C1121F 0 47%,#6E0A12 47% 53%,#C1121F 53%)}
+.odo-u{font:600 18px/1 var(--display);padding-bottom:8px}
+
+/* plates */
+.plate{background:var(--plate);color:var(--plate-ink);border-radius:6px;padding:18px;margin:16px 0}
+.plate h2{font:600 17px/1.3 var(--display);margin:0 0 14px}
+.hero .plate{margin:20px 0 0}
+.mute{color:var(--plate-mute);font-size:14px;line-height:20px;font-weight:500}
+.note{font-size:15px;line-height:22px;margin:12px 0 0}
 
 /* forms */
 form.entry{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 form.entry .full{grid-column:1/-1}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
-.field label{font-size:14px;line-height:20px;font-weight:500;color:var(--text-2)}
-input,select{font:400 16px/24px var(--font);font-variant-numeric:tabular-nums;width:100%;min-height:48px;padding:11px 12px;border:1px solid var(--field);border-radius:10px;background:var(--surface);color:var(--text)}
-input::placeholder{color:var(--text-2);opacity:.8}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border:0;border-radius:10px;background:var(--primary);color:var(--on-primary);font:600 16px/1 var(--font);cursor:pointer;transition:opacity .15s}
-.btn:active{opacity:.85}
-.btn.secondary{background:var(--surface-2);color:var(--text)}
-.btn[disabled]{opacity:.55;cursor:default}
-.icon-btn{display:inline-grid;place-items:center;width:44px;height:44px;margin:-10px -8px -10px 0;border:0;background:none;color:var(--text-2);border-radius:10px;cursor:pointer}
-.icon-btn.confirm{width:auto;padding:0 10px;color:var(--bad);font:600 14px/1 var(--font)}
-.link{background:none;border:0;padding:0;color:var(--primary);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;min-height:44px}
-:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
-input:focus-visible{outline-offset:0}
-.check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px}
-.check input{width:22px;height:22px;min-height:0;accent-color:var(--primary)}
+.field label{font-size:14px;line-height:20px;font-weight:600}
+input[type=date]{font-size:17px;padding:12px 8px}
+input,select{font:500 18px/24px var(--text);font-variant-numeric:tabular-nums;width:100%;min-height:52px;padding:12px;border:2px solid var(--plate-ink);border-radius:6px;background:var(--plate);color:var(--plate-ink);caret-color:var(--plate-ink)}
+input::placeholder{color:var(--plate-mute);opacity:1;font-weight:400}
+input[aria-invalid="true"]{border-color:var(--bad)}
+.ferr{margin:2px 0 0;font-size:14px;line-height:20px;font-weight:600}
+.ferr.bad{color:var(--bad)}.ferr.warn{color:var(--plate-ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:56px;padding:0 24px;border:0;border-radius:999px;background:var(--plate-ink);color:var(--plate);font:600 17px/1 var(--text);cursor:pointer;transition:transform .12s}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent;color:var(--plate-ink);border:2px solid var(--plate-ink);min-height:48px}
+.btn[disabled]{opacity:.6}
+.on-page .btn{background:var(--ink);color:var(--page)}
+.check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:16px}
+.check input{width:22px;height:22px;min-height:0;accent-color:var(--plate-ink)}
+.link{background:none;border:0;padding:0;color:inherit;font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:44px}
 
-/* figures: one card, hairline cells */
-.figs{display:grid;grid-template-columns:1fr 1fr;padding:0;overflow:hidden}
-.fig{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px;min-width:0}
-.fig:nth-child(odd){border-right:1px solid var(--border)}
-.fig:nth-last-child(-n+2):nth-child(odd),.fig:last-child{border-bottom:0}
-.fig .v{font-size:28px;line-height:32px;font-weight:600;letter-spacing:-.01em;margin:2px 0}
-.fig .v small{font-size:16px;font-weight:500}
-.fig .v.word{font-size:22px;line-height:28px}
-.meter{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;margin-top:6px}
-.meter i{display:block;height:100%;background:var(--primary);border-radius:4px}
-@media (min-width:720px){.figs{grid-template-columns:repeat(4,1fr)}.figs:has(>.fig:nth-child(2):last-child){grid-template-columns:repeat(2,1fr)}.fig{border-bottom:0;border-right:1px solid var(--border)}.fig:last-child{border-right:0}.legend{max-width:560px}}
+/* Typenschild — the meter's type plate */
+.tp{border:2px solid var(--ink);border-radius:6px;margin:20px 0}
+.tp-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:14px 16px;border-top:2px solid var(--ink)}
+.tp-row:first-child{border-top:0}
+.tp-row .l{font-size:16px;font-weight:500;line-height:1.35}
+.tp-row .l small{display:block;font-size:14px;font-weight:500;margin-top:2px}
+.tp-row .v{font:600 26px/1.1 var(--display);white-space:nowrap;text-align:right}
+.tp-row .v small{font:600 15px var(--text)}
+.tp-row.alert .v{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:5px}
+.ruler{height:10px;border:2px solid var(--ink);border-radius:5px;margin-top:8px;overflow:hidden;width:min(220px,100%)}
+.ruler i{display:block;height:100%;background:var(--ink)}
+.empty-hint{font-size:17px;font-weight:500;margin:20px 0}
 
-/* tables */
-.tbl{overflow-x:auto;margin:0 -16px}
+/* sections on page */
+.sec{margin:28px 0}
+.sec h2{font:600 20px/1.25 var(--display);margin:0 0 12px}
+.chart{position:relative;height:230px}
+
+/* tables on plates */
+.tbl{overflow-x:auto;margin:0 -18px}
 table{width:100%;border-collapse:collapse}
-th,td{padding:12px 16px 12px 0;text-align:right;font-size:16px;line-height:22px;white-space:nowrap}
-th:first-child,td:first-child{text-align:left;padding-left:16px}
-th{font-size:14px;line-height:20px;font-weight:500;color:var(--text-2);border-bottom:1px solid var(--border)}
-td{border-bottom:1px solid var(--border)}
+th,td{padding:12px 18px 12px 0;text-align:right;font-size:16px;line-height:22px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:18px}
+th{font-size:14px;font-weight:600;color:var(--plate-mute);border-bottom:2px solid var(--plate-ink)}
+td{border-bottom:1px solid var(--plate-line)}
 tr:last-child td{border-bottom:0}
-td.t{text-align:left;white-space:normal;color:var(--text-2);font-size:15px}
-tr.total td{font-weight:600}
-.empty{color:var(--text-2);font-size:15px;padding:4px 0}
+td.t{text-align:left;white-space:normal;font-size:15px}
+td.bad{color:var(--bad);font-weight:600}
+.icon-btn{display:inline-grid;place-items:center;width:44px;height:44px;margin:-11px -10px -11px 0;border:0;background:none;color:var(--plate-ink);border-radius:6px;cursor:pointer}
+.icon-btn.confirm{width:auto;padding:0 10px;color:var(--bad);font:600 15px/1 var(--text)}
+details>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:44px;cursor:pointer;font:600 17px var(--display)}
+details>summary::-webkit-details-marker{display:none}
+details>summary::after{content:"";width:10px;height:10px;border-right:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(45deg);margin:0 6px 4px}
+details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+.set{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 16px}
+.set .full{grid-column:1/-1}
+
+/* the house */
+.house-lead{font:600 30px/1.15 var(--display);letter-spacing:-.015em;margin:0 0 22px}
+.house{position:relative;width:min(100%,360px);margin:0 auto}
+.roof{position:relative;height:118px;margin:0 -12px}
+.roof::before{content:"";position:absolute;inset:0;background:#000;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.roof b{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font:700 26px/1 var(--display)}
+.chimney{position:absolute;right:22%;top:24px;width:26px;height:54px;background:#000}
+.floors{display:flex;flex-direction:column;border:3px solid #000;border-top:0}
+.floor{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;text-decoration:none;border-top:3px solid #000;transform-origin:bottom;min-height:52px}
+.floor:first-child{border-top:0}
+.floor .n{font:600 16px/1.2 var(--text)}
+.floor .n small{display:block;font-size:13px;font-weight:500}
+.floor .v{font:600 20px/1 var(--display);white-space:nowrap}
+.floor.f-power{background:var(--power);color:#000}.floor.f-water{background:var(--water);color:#fff}.floor.f-oil{background:var(--oil);color:#fff}.floor.f-rent{background:var(--rent);color:#fff}.floor.f-nk{background:var(--nk);color:#fff}
+.ground{height:10px;background:#000;margin:0 -12px;border-radius:2px}
+@media (prefers-color-scheme:dark){.roof::before,.chimney,.ground{background:#fff}.roof b{color:#000}.floors,.floor{border-color:#fff}}
+@keyframes rise{from{transform:scaleY(0)}to{transform:none}}
+.house.animate .floor{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.house.animate .roof,.house.animate .chimney{animation:drop .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes drop{from{transform:translateY(-24px);opacity:0}to{transform:none;opacity:1}}
+.facts{font-size:18px;line-height:1.5;font-weight:500;margin:24px 0 0}
+.facts b{font:600 18px var(--display)}
+
+/* payments */
+.switch{display:flex;gap:6px;background:rgba(0,0,0,.18);padding:4px;border-radius:999px;margin:0 0 18px;width:max-content}
+.switch a{min-height:44px;display:flex;align-items:center;padding:0 16px;border-radius:999px;color:var(--on);text-decoration:none;font-weight:600}
+.switch a[aria-current]{background:var(--on);color:var(--c)}
+.strip{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.mo{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0;border:2px solid var(--on);border-radius:6px;font-size:14px;font-weight:600}
+.mo .ic{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;border:2px dashed var(--on)}
+.mo.paid{background:var(--on);color:var(--c)}
+.mo.paid .ic{border:0;background:var(--c);color:var(--on)}
+.mo.paid .ic svg{width:18px;height:18px;stroke-width:3}
+.mo.before{border-style:dashed;opacity:.7}.mo.before .ic{border-color:transparent}
+.mo.now:not(.paid){border-width:3px}
 
 /* oil tank */
-.tank-wrap{display:flex;gap:16px;align-items:stretch}
-.tank{width:64px;min-height:132px;border:2px solid var(--text-2);border-radius:12px;position:relative;overflow:hidden;flex:none}
-.tank i{position:absolute;left:0;right:0;bottom:0;background:var(--s-oil);opacity:.9}
-.tank b{position:absolute;inset:0;display:grid;place-items:center;font-weight:600;font-size:15px;color:var(--text);text-shadow:0 0 6px var(--surface)}
+.tank-wrap{display:flex;gap:18px;align-items:stretch}
+.tank{width:84px;min-height:150px;border:3px solid var(--on);border-radius:16px;position:relative;overflow:hidden;flex:none}
+.tank i{position:absolute;left:0;right:0;bottom:0;background:var(--on)}
+.tank-nums{display:flex;flex-direction:column;gap:4px;justify-content:center}
+.big{font:600 34px/1.05 var(--display)}
+.big small{font:600 16px var(--text)}
 
-/* payment strip */
-.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-.mo{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border-radius:10px;border:1px solid var(--border);font-size:14px;font-weight:500;color:var(--text-2)}
-.mo .ic{display:grid;place-items:center;width:28px;height:28px;border-radius:999px;border:1.5px dashed var(--field)}
-.mo.paid{color:var(--text)}
-.mo.paid .ic{background:var(--good);border:0;color:var(--surface)}
-.mo.paid .ic svg{stroke:var(--surface);width:18px;height:18px}
-.mo.now{background:var(--surface-2);color:var(--text);font-weight:600}
-.mo.before .ic{border:0}
-.mo.before{opacity:.55}
+/* bottom bar */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#000;padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));display:flex;justify-content:center}
+.nav div{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:100%;max-width:520px}
+.nav a{--sw:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:56px;border-radius:10px;color:#fff;text-decoration:none;font:600 13px/1 var(--text)}
+.nav a .sw{width:16px;height:16px;border-radius:3px;background:var(--sw);box-shadow:0 0 0 1.5px rgba(255,255,255,.5)}
+.nav a[aria-current]{background:var(--sw);color:var(--on-sw,#fff)}
+.nav a[aria-current] .sw{box-shadow:0 0 0 2px currentColor}
+.nav .n-sum{--sw:var(--concrete);--on-sw:#000}.nav .n-power{--sw:var(--power);--on-sw:#000}.nav .n-water{--sw:var(--water)}.nav .n-oil{--sw:var(--oil)}.nav .n-pay{--sw:var(--rent)}
+@media (prefers-color-scheme:dark){.nav .n-sum{--sw:#E3E5E6}}
+.nav a:focus-visible{outline-color:#fff}
 
-/* summary composition */
-.lead{font-size:22px;line-height:30px;font-weight:600;margin:0 0 14px}
-.lead .num{font-size:30px}
-.comp{display:flex;height:20px;border-radius:6px;overflow:hidden;gap:2px;background:var(--surface-2)}
-.comp i{display:block;height:100%}
-.legend{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
-.legend li{display:flex;align-items:center;gap:10px;font-size:16px;line-height:22px}
-.legend .cap{font-size:14px}
-.legend li span:nth-child(2){flex:1}
-.sw{width:12px;height:12px;border-radius:3px;flex:none}
+/* status toast above the bar */
+#status{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:11;max-width:520px;margin:0 auto;padding:12px 16px;border-radius:10px;background:#000;color:#fff;font-size:15px;line-height:21px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+#status:empty{display:none}
+#status.err{background:var(--bad)}
+#status .link{min-height:0;margin-left:6px;color:#fff}
+@media (prefers-color-scheme:dark){#status{background:#fff;color:#000}#status .link{color:#000}#status.err{background:#FF6B6B;color:#000}}
 
-details>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:44px;cursor:pointer;font-weight:600;font-size:17px}
-details>summary::-webkit-details-marker{display:none}
-details>summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--text-2);border-bottom:2px solid var(--text-2);transform:rotate(45deg);margin:0 6px 4px}
-details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
-.set{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 16px}
-.set .full{grid-column:1/-1}
-.login{max-width:380px;margin:12vh auto 0}
-@media (max-width:380px){form.entry,.set{grid-template-columns:1fr}.fig .v{font-size:24px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.login{max-width:400px;margin:14vh auto 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:370px){form.entry,.set{grid-template-columns:1fr}.title h1{font-size:36px}.tp-row .v{font-size:22px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
-<body>
-<main>
-<div class="top"><h1>Дом: счётчики и расходы</h1><span id="hdr"></span></div>
-<div class="bar-top"><nav class="tabs" id="tabs" aria-label="Разделы"></nav>
-<div id="status" role="status" aria-live="polite"></div></div>
-<div id="view"></div>
-</main>
+<body data-w="sum">
+<main id="view"></main>
+<div id="status" role="status" aria-live="polite"></div>
+<nav class="nav" aria-label="Разделы"><div id="tabs"></div></nav>
+<span id="hdr" hidden></span>
 
 <script id="state" type="application/json">{"v":2,"meters":{"power":{"name":"Электричество","unit":"кВт·ч","price":28.11,"priceUnit":"ct","base":190.11,"norm":3500,"abs":98,"nk":false,"readings":[["2026-06-23",3845],["2026-10-10",4849],["2026-10-31",5052],["2026-11-23",5229]]},"water":{"name":"Вода (холодная)","unit":"м³","price":4.5,"priceUnit":"eur","base":0,"norm":0,"abs":0,"nk":true,"readings":[]}},"oil":{"tankL":3000,"heightCm":150,"nk":false,"entries":[]},"nk":{"monthly":0,"payments":[]},"rent":{"monthly":0,"payments":[]}}</script>
 
@@ -181,7 +216,7 @@ const shortLabels = keys => keys.map((k,i)=>MON[k%12]+(i===0||k%12===0?' '+Strin
 const dim = k => new Date(Date.UTC(Math.floor(k/12),k%12+1,0)).getUTCDate();
 const nowK = () => ym(pd(today()));
 const plural = (n,a,b,c) => { n=Math.abs(Math.round(n))%100; const m=n%10; return n>10&&n<20?c:m===1?a:m>=2&&m<=4?b:c; };
-const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const css = v => getComputedStyle(document.body).getPropertyValue(v).trim();
 
 /* Lucide icons */
 const IC = {
@@ -259,13 +294,21 @@ function oilCalc(){
   return out;
 }
 
+Object.assign(IC,{
+  house:'<path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>'
+});
+const WNAME={power:'Свет',water:'Вода',oil:'Масло',rent:'Аренда',nk:'Nebenkosten'};
+const DAYSG=n=>plural(n,'день','дня','дней');
+const longDate=s=>{const [y,m,d]=s.split('-').map(Number);return `${d} ${['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'][m-1]}`;};
+
 /* ---------- shared pieces ---------- */
 const field = (id,label,attrs='',cls='') => `<div class="field ${cls}"><label for="${id}">${label}</label><input id="${id}" ${attrs}></div>`;
-const fig = (label,value,sub='',cls='',extra='') => `<div class="fig"><span class="cap">${label}</span><span class="v ${cls}">${value}</span>${sub?`<span class="cap">${sub}</span>`:''}${extra}</div>`;
 const delBtn = (key,what) => `<button type="button" class="icon-btn" data-del="${esc(key)}" aria-label="Удалить ${esc(what)}">${icon('x')}</button>`;
 const table = (head,rows,emptyText) => rows.length
   ? `<div class="tbl"><table><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`
-  : `<p class="empty">${emptyText}</p>`;
+  : `<p class="mute" style="margin:0">${emptyText}</p>`;
+const tpRow = (label,value,sub='',cls='',extra='') => `<div class="tp-row ${cls}"><span class="l">${label}${sub?`<small>${sub}</small>`:''}${extra}</span><span class="v">${value}</span></div>`;
 function odometer(value, unit){
   const dec = unit==='м³' ? 3 : 0;
   const parts = Math.max(0,value).toFixed(dec).split('.');
@@ -273,51 +316,168 @@ function odometer(value, unit){
   const cells = [...int].map(d=>`<span>${d}</span>`).join('') + (dec?[...parts[1]].map(d=>`<span class="red">${d}</span>`).join(''):'');
   return `<div class="odo-row"><div class="odo" role="img" aria-label="Показание ${fmt(value,dec)} ${unit}">${cells}</div><span class="odo-u" aria-hidden="true">${unit}</span></div>`;
 }
+const chartBlock = (title,label) => `<section class="sec wrap"><h2>${title}</h2><div class="chart"><canvas id="ch" role="img" aria-label="${label}; те же числа в таблице ниже"></canvas></div></section>`;
 
-/* ---------- meter pages ---------- */
+/* ---------- Свет / Вода ---------- */
 function meterView(id){
   const M=S.meters[id], c=meterCalc(M), u=M.unit, w=u==='м³', dp=w?2:0, rd=w?3:1;
   const last=c.r[c.r.length-1], prev=c.r[c.r.length-2];
-  let hero = last
-    ? `${odometer(last[1],u)}<div class="hero-meta cap"><span>Последнее показание <b class="num">${fd(last[0])}</b></span>${prev?`<span>+${fmt(last[1]-prev[1],dp)} ${u} за ${fmt((pd(last[0])-pd(prev[0]))/DAY)} ${plural((pd(last[0])-pd(prev[0]))/DAY,'день','дня','дней')}</span>`:''}</div>`
-    : `<p class="empty">Показаний пока нет. Перепишите число со счётчика — это займёт десять секунд.</p>`;
-  let figs='';
+  const price = M.priceUnit==='ct' ? `${fmt(M.price,2)} ct за ${u}` : `${fmt(M.price,2)} € за ${u}`;
+  const since = last ? (prev
+      ? `${longDate(last[0])}: +${fmt(last[1]-prev[1],dp)} ${u} за ${fmt((pd(last[0])-pd(prev[0]))/DAY)} ${DAYSG((pd(last[0])-pd(prev[0]))/DAY)}`
+      : `Показание от ${longDate(last[0])}`) : '';
+  let tp='';
   if(c.months.length){
-    const pct=M.norm?c.year/M.norm*100:null, ok=pct==null||pct<=100;
-    figs+=fig('Прогноз за год',`${fmt(c.year,w?1:0)}<small> ${u}</small>`, pct!=null?`${fmt(pct)}% от нормы ${fmt(M.norm)} — ${ok?'в норме':'выше нормы'}`:'норма не задана', pct==null?'':ok?'good':'bad', pct!=null?`<div class="meter" aria-hidden="true"><i style="width:${Math.min(pct,100)}%;background:var(--${ok?'primary':'bad'})"></i></div>`:'');
-    figs+=fig('Расход в день',`${fmt(c.daily,rd)}<small> ${u}</small>`,`за последний период ${fmt(c.lastRate,rd)} ${u}`);
-    figs+=fig('Стоимость за год',eur(c.yearCost),`примерно ${eur(c.yearCost/12)} в месяц`);
-    if(M.abs){const bal=c.paid-c.costTotal;figs+=fig('Abschlag и факт',(bal>=0?'+':'−')+eur(Math.abs(bal)),bal>=0?'переплата, вернут':'недоплата, придётся доплатить',bal>=0?'good':'bad');}
-    else figs+=fig('Потрачено с начала учёта',eur(c.costTotal),`${fmt(c.used,w?1:0)} ${u} за ${fmt(c.days)} ${plural(c.days,'день','дня','дней')}`);
+    const pct=M.norm?c.year/M.norm*100:null, over=pct!=null&&pct>100;
+    tp+=tpRow('За год выйдет',`${fmt(c.year,w?1:0)} <small>${u}</small>`, pct!=null?`${fmt(pct)}% от нормы ${fmt(M.norm)} — ${over?'выше нормы':'в норме'}`:'норма не задана', over?'alert':'', pct!=null?`<span class="ruler" aria-hidden="true" style="display:block"><i style="width:${Math.min(pct,100)}%"></i></span>`:'');
+    tp+=tpRow('В день',`${fmt(c.daily,rd)} <small>${u}</small>`,`за последний период ${fmt(c.lastRate,rd)} ${u}`);
+    tp+=tpRow('Год обойдётся в',eur(c.yearCost),`примерно ${eur(c.yearCost/12)} в месяц`);
+    if(M.abs){const bal=c.paid-c.costTotal;tp+=tpRow('Abschlag '+eur(M.abs)+' в месяц',(bal>=0?'+':'−')+eur(Math.abs(bal)),bal>=0?'переплата, вернут':'недоплата, придётся доплатить',bal<0?'alert':'');}
+    else tp+=tpRow('С начала учёта',eur(c.costTotal),`${fmt(c.used,w?1:0)} ${u} за ${fmt(c.days)} ${DAYSG(c.days)}`);
   }
   const mrows=c.months.map(o=>{
-    const q=o.fc?o.fcQty:o.qty, cost=o.fc?o.fcQty*c.ppu+M.base/12:o.cost, n=o.fc?M.norm/365*o.dim:o.norm;
-    return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td class="${M.norm&&q>n?'bad':''}">${M.norm&&q>n?'<span aria-label="выше нормы">↑ </span>':''}${fmt(q,dp)}</td>${M.norm?`<td>${fmt(n,dp)}</td>`:''}<td>${fmt(cost,2)}</td></tr>`;}).reverse();
+    const q=o.fc?o.fcQty:o.qty, cost=o.fc?o.fcQty*c.ppu+M.base/12:o.cost, n=o.fc?M.norm/365*o.dim:o.norm, over=M.norm&&q>n;
+    return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td class="${over?'bad':''}">${over?'↑ ':''}${fmt(q,dp)}</td>${M.norm?`<td>${fmt(n,dp)}</td>`:''}<td>${fmt(cost,2)}</td></tr>`;}).reverse();
   const rrows=c.r.map((x,i)=>{const rate=i?(x[1]-c.r[i-1][1])/((pd(x[0])-pd(c.r[i-1][0]))/DAY):null;
     return `<tr><td>${fd(x[0])}</td><td>${fmt(x[1],w?3:0)}</td><td>${rate==null?'—':fmt(rate,rd)}</td><td>${delBtn(x[0],'показание от '+fd(x[0]))}</td></tr>`;}).reverse();
   return `
-  <section class="card hero" aria-label="${esc(M.name)}">
-    ${hero}
-    <form class="entry" id="f_read">
-      ${field('d','Дата',`type="date" value="${today()}" required`)}
-      ${field('v',`Показание, ${u}`,`type="text" inputmode="decimal" autocomplete="off" required ${last?`placeholder="${fmt(last[1],w?3:0).replace(/\s/g,'')}"`:''}`)}
-      <button class="btn full">Добавить показание</button>
-    </form>
-  </section>
-  ${figs?`<section class="card figs" aria-label="Итоги">${figs}</section>`:`<p class="note" style="margin:0 0 16px">Внесите ещё одно показание — появятся расход, прогноз и стоимость.</p>`}
-  ${c.months.length?`<section class="card"><h2>Расход по месяцам, ${u}</h2><div class="chart"><canvas id="ch" role="img" aria-label="График расхода по месяцам; те же числа в таблице ниже"></canvas></div></section>
-  <section class="card"><h2>Месяцы и стоимость</h2>${table(['Месяц',u].concat(M.norm?['Норма']:[]).concat(['€']),mrows,'')}
-  <p class="note">Между показаниями расход распределён равномерно по дням. Звёздочка — текущий месяц, прогноз по последнему темпу.</p></section>`:''}
-  <section class="card"><h2>Показания</h2>${table(['Дата','Показание',`${u} в день`,'<span class="sr">Действия</span>'],rrows,'Пока пусто.')}</section>
-  <section class="card"><details><summary>Тариф</summary><div class="set">
+  <header class="hero">
+    <div class="title"><h1>${WNAME[id]}</h1><span>${price}</span></div>
+    ${last?odometer(last[1],u):''}
+    ${last?`<p class="since">${since}</p>`:`<p class="empty-hint">Показаний пока нет. Перепишите число со счётчика — это десять секунд.</p>`}
+    <section class="plate" aria-label="Новое показание">
+      <form class="entry" id="f_read">
+        ${field('d','Дата',`type="date" value="${today()}" required`)}
+        ${field('v',`Показание, ${u}`,`type="text" inputmode="decimal" autocomplete="off" required ${last?`placeholder="${fmt(last[1],w?3:0).replace(/\s/g,'')}"`:''}`)}
+        <button class="btn full">${icon('plus')}Добавить показание</button>
+      </form>
+    </section>
+  </header>
+  <div class="wrap">
+    ${tp?`<section class="tp" aria-label="Итоги">${tp}</section>`:`<p class="empty-hint">Ещё одно показание — и здесь появятся расход, прогноз и стоимость.</p>`}
+  </div>
+  ${c.months.length?chartBlock(`По месяцам, ${u}`,'Расход по месяцам')+`
+  <div class="wrap"><section class="plate"><h2>Месяцы и стоимость</h2>${table(['Месяц',u].concat(M.norm?['Норма']:[]).concat(['€']),mrows,'')}
+  <p class="note mute">Между показаниями расход распределён равномерно по дням. Звёздочка — текущий месяц, прогноз по последнему темпу.</p></section></div>`:''}
+  <div class="wrap">
+  <section class="plate"><h2>Показания</h2>${table(['Дата','Показание',`${u} в день`,'<span class="sr">Удалить</span>'],rrows,'Пока пусто.')}</section>
+  <section class="plate"><details><summary>Тариф</summary><div class="set">
     ${field('s_price',`Цена за ${u}, ${M.priceUnit==='ct'?'центов':'€'}`,`type="text" inputmode="decimal" autocomplete="off" value="${M.price}"`)}
     ${field('s_base','Grundpreis, € в год',`type="text" inputmode="decimal" autocomplete="off" value="${M.base}"`)}
     ${field('s_norm',`Норма, ${u} в год`,`type="text" inputmode="decimal" autocomplete="off" value="${M.norm}"`)}
     ${field('s_abs','Abschlag, € в месяц',`type="text" inputmode="decimal" autocomplete="off" value="${M.abs}"`)}
     <label class="check full"><input type="checkbox" id="s_nk" ${M.nk?'checked':''}> Оплачивается через Nebenkosten арендодателю</label>
-    <p class="note full" style="margin:0">0 в поле нормы или Abschlag — значит, не учитывать.</p>
-  </div><button class="btn secondary" id="s_save">Сохранить тариф</button></details></section>`;
+    <p class="mute full" style="margin:0">0 в норме или Abschlag — не учитывать.</p>
+  </div><button class="btn" id="s_save">Сохранить тариф</button></details></section>
+  </div>`;
 }
+
+/* ---------- Масло ---------- */
+function oilView(){
+  const O=S.oil,c=oilCalc();
+  const pct=c.nowL!=null&&O.tankL?Math.min(100,c.nowL/O.tankL*100):0;
+  let tp='';
+  if(c.daily!=null){
+    tp+=tpRow('Сейчас уходит',`${fmt(c.recent,1)} <small>л/день</small>`,'по последним ~60 дням');
+    tp+=tpRow('В среднем',`${fmt(c.daily,1)} <small>л/день</small>`,`за ${fmt(c.days)} ${DAYSG(c.days)}`);
+    tp+=tpRow('Отопление в месяц',c.ppl?eur(c.recent*30.4*c.ppl):'—',c.ppl?`по ${fmt(c.ppl,2)} € за литр`:'внесите заправку с ценой');
+    tp+=tpRow('Закончится около',c.daysLeft!=null?fd(new Date(Date.now()+c.daysLeft*DAY).toISOString().slice(0,10)):'—','при нынешнем темпе',c.daysLeft!=null&&c.daysLeft<45?'alert':'');
+  }
+  const mrows=c.months.map(o=>{const q=o.fc?o.fcQty:o.qty;return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td>${fmt(q)}</td><td>${c.ppl?fmt(q*c.ppl,2):'—'}</td></tr>`}).reverse();
+  const erows=c.e.map(x=>`<tr><td>${fd(x.d)}</td><td class="t">${x.cm!=null?'Замер, '+fmt(x.cm,1)+' см':'Заправка'+(x.eur?', '+eur(x.eur,2):'')}</td><td>${x.cm!=null?'≈ '+fmt(c.toL(x.cm)):'+'+fmt(x.l)}</td><td>${delBtn(O.entries.indexOf(x),(x.cm!=null?'замер':'заправку')+' от '+fd(x.d))}</td></tr>`).reverse();
+  return `
+  <header class="hero">
+    <div class="title"><h1>Масло</h1><span>бак ${fmt(O.tankL)} л</span></div>
+    ${c.nowL!=null?`<div class="tank-wrap"><div class="tank" role="img" aria-label="Бак заполнен примерно на ${fmt(pct)}%"><i style="height:${pct}%"></i></div>
+      <div class="tank-nums"><span class="big">${fmt(c.nowL)} <small>л</small></span><span style="font-weight:600">примерно, ${fmt(pct)}% бака</span><span>замер ${longDate(c.nowD)}</span>
+      ${c.daysLeft!=null?`<span style="font-weight:600">${c.daysLeft<45?'Пора заказывать: ':'Хватит на '}${fmt(c.daysLeft)} ${DAYSG(c.daysLeft)}</span>`:''}</div></div>`
+      :`<p class="empty-hint">Замеров пока нет. Опустите щуп и запишите, на скольких сантиметрах масло.</p>`}
+    <section class="plate" aria-label="Замер щупом">
+      <form class="entry" id="f_lv">
+        ${field('d','Дата замера',`type="date" value="${today()}" required`)}
+        ${field('cm','Щуп, см',`type="text" inputmode="decimal" autocomplete="off" required aria-describedby="cmhint"`)}
+        <p class="mute full" id="cmhint" style="margin:-4px 0 0">Введите сантиметры — здесь появится объём в литрах.</p>
+        <button class="btn full">${icon('plus')}Добавить замер</button>
+      </form>
+    </section>
+  </header>
+  <div class="wrap">
+    ${tp?`<section class="tp" aria-label="Итоги">${tp}</section>`:`<p class="empty-hint">Нужно минимум два замера, чтобы появился расход.</p>`}
+    <section class="plate"><h2>Заправка</h2>
+      <form class="entry" id="f_fill">
+        ${field('fd','Дата',`type="date" value="${today()}" required`)}
+        ${field('fl','Литров',`type="text" inputmode="decimal" autocomplete="off" required`)}
+        ${field('fe','Сумма, €',`type="text" inputmode="decimal" autocomplete="off"`,'full')}
+        <button class="btn full">Записать заправку</button>
+      </form>
+      <p class="note mute">После заправки сделайте и замер щупом — расход посчитается точнее.</p></section>
+  </div>
+  ${c.months.length?chartBlock('По месяцам, литры','Расход масла по месяцам')+`
+  <div class="wrap"><section class="plate"><h2>Месяцы</h2>${table(['Месяц','Литры','€, примерно'],mrows,'')}
+  <p class="note mute">Щуп даёт приблизительные цифры — отдельные месяцы могут «скакать». Тренд за несколько месяцев надёжнее.</p></section></div>`:''}
+  <div class="wrap">
+  <section class="plate"><h2>Записи</h2>${table(['Дата','Что','Литры','<span class="sr">Удалить</span>'],erows,'Пока пусто.')}</section>
+  <section class="plate"><details><summary>Бак</summary><div class="set">
+    ${field('o_l','Объём бака, л',`type="text" inputmode="decimal" autocomplete="off" value="${O.tankL}"`)}
+    ${field('o_h','Высота при полном баке, см',`type="text" inputmode="decimal" autocomplete="off" value="${O.heightCm}"`)}
+    <label class="check full"><input type="checkbox" id="o_nk" ${O.nk?'checked':''}> Оплачивается через Nebenkosten арендодателю</label>
+    <p class="mute full" style="margin:0">Сантиметры пересчитываются в литры линейно — верно для прямоугольных и батарейных баков.</p>
+  </div><button class="btn" id="o_save">Сохранить</button></details></section>
+  </div>`;
+}
+
+/* ---------- Платежи: Аренда / Nebenkosten ---------- */
+function stripHTML(payments){
+  const cur=nowK(), cells=[], first=payments.length?Math.min(...payments.map(x=>ym(pd(x.d)))):cur;
+  for(let k=cur-5;k<=cur;k++){
+    const paid=payments.filter(x=>ym(pd(x.d))===k).reduce((s,x)=>s+x.eur,0), before=!paid&&k<first;
+    cells.push(`<li class="mo ${paid?'paid':''} ${before?'before':''} ${k===cur?'now':''}" aria-label="${MONF[k%12]} ${Math.floor(k/12)}: ${paid?'оплачено '+eur(paid,2):before?'до начала учёта':'нет платежа'}"><span class="ic">${paid?icon('check'):''}</span><span>${MON[k%12]}</span></li>`);
+  }
+  return `<ul class="strip">${cells.join('')}</ul>`;
+}
+function payView(kind){
+  const P=S[kind], isRent=kind==='rent', p=[...P.payments].sort((a,b)=>pd(a.d)-pd(b.d));
+  const y=today().slice(0,4), inY=p.filter(x=>x.d.startsWith(y)), paidY=inY.reduce((s,x)=>s+x.eur,0);
+  const cur=nowK(), paidNow=p.some(x=>ym(pd(x.d))===cur);
+  const byYear={}; p.forEach(x=>{const k=x.d.slice(0,4);byYear[k]=(byYear[k]||0)+x.eur;});
+  const Mon=MONF[cur%12][0].toUpperCase()+MONF[cur%12].slice(1);
+  let tp=tpRow(Mon, paidNow?'оплачено':(P.monthly?'не оплачено':'—'), P.monthly?`${eur(P.monthly,2)} в месяц`:'сумма в месяц не задана', !paidNow&&P.monthly?'alert':'');
+  tp+=tpRow(`Оплачено в ${y}`, eur(paidY), `${inY.length} ${plural(inY.length,'платёж','платежа','платежей')}`);
+  let extra='';
+  if(!isRent){
+    let tracked=0, items=[];
+    for(const id in S.meters){const M=S.meters[id];if(!M.nk)continue;const v=meterCalc(M).months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.cost,0);tracked+=v;items.push(`${M.name.toLowerCase()} ${eur(v)}`);}
+    if(S.oil.nk){const c=oilCalc();if(c.ppl){const v=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.qty*c.ppl,0);tracked+=v;items.push('масло '+eur(v));}}
+    if(items.length){ tp+=tpRow('Из них по счётчикам', eur(tracked), esc(items.join(', '))); tp+=tpRow('Остальное', eur(Math.max(0,paidY-tracked)), 'мусор, налог, уборка и прочее'); }
+    extra=`<p class="note">В Nebenkosten входит и то, что вы не меряете, поэтому «по счётчикам» почти всегда меньше. Сравнивайте с прошлогодней Abrechnung.</p>`;
+  }
+  const rows=p.map(x=>`<tr><td>${fd(x.d)}</td><td class="t">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td>${delBtn(P.payments.indexOf(x),'платёж от '+fd(x.d))}</td></tr>`).reverse();
+  const yrows=Object.keys(byYear).sort().reverse().map(k=>`<tr><td>${k}</td><td>${fmt(byYear[k],2)}</td></tr>`);
+  return `
+  <header class="hero">
+    <nav class="switch" aria-label="Вид платежей"><a href="#rent" ${isRent?'aria-current="page"':''}>Аренда</a><a href="#nk" ${!isRent?'aria-current="page"':''}>Nebenkosten</a></nav>
+    <div class="title"><h1 style="font-size:${isRent?44:34}px">${WNAME[kind]}</h1><span>${P.monthly?eur(P.monthly)+' в месяц':''}</span></div>
+    ${stripHTML(p)}
+    ${P.monthly&&!paidNow?`<div class="on-page" style="margin-top:18px"><button class="btn" id="quick" style="width:100%">${icon('check')}Оплачено за ${MONF[cur%12]}: ${eur(P.monthly,2)}</button></div>`:''}
+  </header>
+  <div class="wrap">
+    <section class="tp" aria-label="Итоги">${tp}</section>
+    ${extra}
+    <section class="plate"><h2>${paidNow?'Ещё один платёж':'Другой платёж'}</h2>${paidNow?`<p class="mute" style="margin:-8px 0 12px">За ${MONF[cur%12]} уже оплачено.</p>`:''}
+      <form class="entry" id="f_pay">
+        ${field('d','Дата',`type="date" value="${today()}" required`)}
+        ${field('eur','Сумма, €',`type="text" inputmode="decimal" autocomplete="off" required value="${paidNow?'':P.monthly||''}"`)}
+        ${field('note','Комментарий',`placeholder="${isRent?'например, за декабрь':'например, Nachzahlung 2025'}"`,'full')}
+        <button class="btn full">Добавить платёж</button>
+      </form></section>
+    <section class="plate"><h2>Платежи</h2>${table(['Дата','Комментарий','€','<span class="sr">Удалить</span>'],rows,'Платежей пока нет.')}</section>
+    ${yrows.length>1?`<section class="plate"><h2>По годам</h2>${table(['Год','Оплачено, €'],yrows,'')}</section>`:''}
+    <section class="plate"><details><summary>Сумма в месяц</summary><div class="set">
+      ${field('m_m',isRent?'Аренда (Kaltmiete), € в месяц':'Предоплата Nebenkosten, € в месяц',`type="text" inputmode="decimal" autocomplete="off" value="${P.monthly}"`,'full')}
+    </div><button class="btn" id="m_save">Сохранить</button></details></section>
+  </div>`;
+}
+
 function meterBind(id){
   const M=S.meters[id], c=meterCalc(M);
   const dp=M.unit==='м³'?3:0;
@@ -338,55 +498,6 @@ function meterBind(id){
       M.norm?{label:'Норма',data:full.map(o=>+(M.norm/365*o.dim).toFixed(1))}:null,false);
   }
 }
-
-/* ---------- oil ---------- */
-function oilView(){
-  const O=S.oil,c=oilCalc();
-  const pct=c.nowL!=null&&O.tankL?Math.min(100,c.nowL/O.tankL*100):0;
-  const hero = c.nowL!=null
-    ? `<div class="tank-wrap"><div class="tank" role="img" aria-label="Бак заполнен примерно на ${fmt(pct)}%"><i style="height:${pct}%"></i><b>${fmt(pct)}%</b></div>
-       <div class="hero-meta" style="flex-direction:column;gap:6px"><span class="cap">В баке примерно</span><span style="font-size:28px;line-height:32px;font-weight:600">${fmt(c.nowL)}<small style="font-size:16px;font-weight:500"> л из ${fmt(O.tankL)}</small></span>
-       <span class="cap">Замер ${fd(c.nowD)}</span>${c.daysLeft!=null?`<span class="${c.daysLeft<45?'warn':''}" style="font-weight:600">Хватит примерно на ${fmt(c.daysLeft)} ${plural(c.daysLeft,'день','дня','дней')}${c.daysLeft<45?' — пора заказывать':''}</span>`:''}</div></div>`
-    : `<p class="empty">Замеров пока нет. Опустите щуп и запишите, на скольких сантиметрах масло.</p>`;
-  let figs='';
-  if(c.daily!=null){
-    figs+=fig('Расход сейчас',`${fmt(c.recent,1)}<small> л в день</small>`,'по последним ~60 дням');
-    figs+=fig('В среднем',`${fmt(c.daily,1)}<small> л в день</small>`,`за ${fmt(c.days)} ${plural(c.days,'день','дня','дней')}`);
-    figs+=fig('Отопление в месяц',c.ppl?eur(c.recent*30.4*c.ppl):'—',c.ppl?`по ${fmt(c.ppl,2)} € за литр`:'внесите заправку с ценой');
-    figs+=fig('Закончится около',c.daysLeft!=null?fd(new Date(Date.now()+c.daysLeft*DAY).toISOString().slice(0,10)):'—','при нынешнем темпе',c.daysLeft!=null&&c.daysLeft<45?'warn':'');
-  }
-  const mrows=c.months.map(o=>{const q=o.fc?o.fcQty:o.qty;return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td>${fmt(q)}</td><td>${c.ppl?fmt(q*c.ppl,2):'—'}</td></tr>`}).reverse();
-  const erows=c.e.map(x=>`<tr><td>${fd(x.d)}</td><td class="t">${x.cm!=null?'Замер, '+fmt(x.cm,1)+' см':'Заправка'+(x.eur?', '+eur(x.eur,2):'')}</td><td>${x.cm!=null?'≈ '+fmt(c.toL(x.cm)):'+'+fmt(x.l)}</td><td>${delBtn(O.entries.indexOf(x),(x.cm!=null?'замер':'заправку')+' от '+fd(x.d))}</td></tr>`).reverse();
-  return `
-  <section class="card hero" aria-label="Масло в котле">
-    ${hero}
-    <form class="entry" id="f_lv">
-      ${field('d','Дата замера',`type="date" value="${today()}" required`)}
-      ${field('cm','Щуп, см',`type="text" inputmode="decimal" autocomplete="off" required aria-describedby="cmhint"`)}
-      <p class="cap full" id="cmhint" style="margin:-4px 0 0">Введите сантиметры — здесь появится объём в литрах.</p>
-      <button class="btn full">Добавить замер</button>
-    </form>
-  </section>
-  <section class="card"><h2>Заправка</h2>
-    <form class="entry" id="f_fill">
-      ${field('fd','Дата',`type="date" value="${today()}" required`)}
-      ${field('fl','Литров',`type="text" inputmode="decimal" autocomplete="off" required`)}
-      ${field('fe','Сумма, €',`type="text" inputmode="decimal" autocomplete="off"`,'full')}
-      <button class="btn full">Записать заправку</button>
-    </form>
-    <p class="note">После заправки сделайте и замер щупом — расход посчитается точнее.</p></section>
-  ${figs?`<section class="card figs" aria-label="Итоги">${figs}</section>`:`<p class="note" style="margin:0 0 16px">Нужно минимум два замера, чтобы появился расход.</p>`}
-  ${c.months.length?`<section class="card"><h2>Расход по месяцам, л</h2><div class="chart"><canvas id="ch" role="img" aria-label="График расхода масла по месяцам; те же числа в таблице ниже"></canvas></div>
-  ${table(['Месяц','Литры','€, примерно'],mrows,'')}
-  <p class="note">Щуп даёт приблизительные цифры, поэтому отдельные месяцы могут «скакать». Тренд за несколько месяцев надёжнее.</p></section>`:''}
-  <section class="card"><h2>Записи</h2>${table(['Дата','Что','Литры','<span class="sr">Действия</span>'],erows,'Пока пусто.')}</section>
-  <section class="card"><details><summary>Бак</summary><div class="set">
-    ${field('o_l','Объём бака, л',`type="text" inputmode="decimal" autocomplete="off" value="${O.tankL}"`)}
-    ${field('o_h','Высота при полном баке, см',`type="text" inputmode="decimal" autocomplete="off" value="${O.heightCm}"`)}
-    <label class="check full"><input type="checkbox" id="o_nk" ${O.nk?'checked':''}> Оплачивается через Nebenkosten арендодателю</label>
-    <p class="note full" style="margin:0">Сантиметры пересчитываются в литры линейно — это верно для прямоугольных и батарейных баков.</p>
-  </div><button class="btn secondary" id="o_save">Сохранить</button></details></section>`;
-}
 function oilBind(){
   const O=S.oil,c=oilCalc();
   $('cm').oninput=()=>{fieldError('cm','');const v=parseNum($('cm').value);$('cmhint').textContent=v?`Это примерно ${fmt(c.toL(v))} л.`:'Введите сантиметры — здесь появится объём в литрах.';};
@@ -401,57 +512,6 @@ function oilBind(){
   $('o_save').onclick=()=>{const t={tankL:numOr('o_l',O.tankL),heightCm:numOr('o_h',O.heightCm),nk:$('o_nk').checked};commit('Бак сохранён.',()=>Object.assign(S.oil,t));};
   if(c.months.length){const full=c.months.filter(o=>!o.partial||o.fc);barChart(shortLabels(full.map(o=>o.key)).map((l,i)=>l+(full[i].fc?'*':'')),[{label:'Литры',data:full.map(o=>Math.round(o.fc?o.fcQty:o.qty)),color:css('--s-oil'),fc:full.map(o=>o.fc)}],null,false);}
 }
-
-/* ---------- payments (rent + Nebenkosten share one layout) ---------- */
-function stripHTML(payments){
-  const cur=nowK(), cells=[], first=payments.length?Math.min(...payments.map(x=>ym(pd(x.d)))):cur;
-  for(let k=cur-5;k<=cur;k++){
-    const paid=payments.filter(x=>ym(pd(x.d))===k).reduce((s,x)=>s+x.eur,0);
-    const before=!paid&&k<first;
-    cells.push(`<li class="mo ${paid?'paid':''} ${before?'before':''} ${k===cur?'now':''}" aria-label="${MONF[k%12]} ${Math.floor(k/12)}: ${paid?'оплачено '+eur(paid,2):before?'до начала учёта':'нет платежа'}"><span class="ic">${paid?icon('check'):''}</span><span>${MON[k%12]}</span></li>`);
-  }
-  return `<ul class="strip" style="list-style:none;margin:0;padding:0">${cells.join('')}</ul>`;
-}
-function payView(kind){
-  const P=S[kind], isRent=kind==='rent', p=[...P.payments].sort((a,b)=>pd(a.d)-pd(b.d));
-  const y=today().slice(0,4), inY=p.filter(x=>x.d.startsWith(y)), paidY=inY.reduce((s,x)=>s+x.eur,0);
-  const cur=nowK(), paidNow=p.some(x=>ym(pd(x.d))===cur);
-  const byYear={}; p.forEach(x=>{const k=x.d.slice(0,4);byYear[k]=(byYear[k]||0)+x.eur;});
-  const what=isRent?'Аренда':'Nebenkosten';
-  let figs = fig(MONF[cur%12][0].toUpperCase()+MONF[cur%12].slice(1), paidNow?'Оплачено':'Не оплачено', P.monthly?`${eur(P.monthly,2)} в месяц`:'сумма в месяц не задана', (paidNow?'good':P.monthly?'bad':'')+' word');
-  figs += fig(`Оплачено в ${y}`, eur(paidY,2), `${inY.length} ${plural(inY.length,'платёж','платежа','платежей')}`);
-  let extra='';
-  if(!isRent){
-    let tracked=0, items=[];
-    for(const id in S.meters){const M=S.meters[id];if(!M.nk)continue;const v=meterCalc(M).months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.cost,0);tracked+=v;items.push(`${M.name}: ${eur(v,2)}`);}
-    if(S.oil.nk){const c=oilCalc();if(c.ppl){const v=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.qty*c.ppl,0);tracked+=v;items.push('Масло: '+eur(v,2));}}
-    figs += fig('Из этого по счётчикам', items.length?eur(tracked,2):'—', items.length?esc(items.join('; ')):'отметьте воду или масло в их настройках');
-    figs += fig('Остальное', items.length?eur(Math.max(0,paidY-tracked),2):'—', 'мусор, налог, уборка и прочее');
-    extra = `<p class="note">В Nebenkosten входит и то, что вы не меряете, поэтому «по счётчикам» почти всегда меньше. Полезнее всего сравнивать с прошлогодней Abrechnung.</p>`;
-  }
-  const rows=p.map(x=>`<tr><td>${fd(x.d)}</td><td class="t">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td>${delBtn(P.payments.indexOf(x),'платёж от '+fd(x.d))}</td></tr>`).reverse();
-  const yrows=Object.keys(byYear).sort().reverse().map(k=>`<tr><td>${k}</td><td>${fmt(byYear[k],2)}</td></tr>`);
-  return `
-  <section class="card hero" aria-label="${what}: последние полгода">
-    <h2 style="margin:0">${what} за последние полгода</h2>
-    ${stripHTML(p)}
-    ${P.monthly&&!paidNow?`<button class="btn" id="quick">Отметить оплату за ${MONF[cur%12]} — ${eur(P.monthly,2)}</button>`:''}
-  </section>
-  <section class="card figs" aria-label="Итоги">${figs}</section>
-  ${extra?`<div style="margin:-8px 0 16px">${extra}</div>`:''}
-  <section class="card"><h2>${paidNow?'Ещё один платёж':'Другой платёж'}</h2>${paidNow?`<p class="cap" style="margin:-6px 0 12px">За ${MONF[cur%12]} уже оплачено.</p>`:''}
-    <form class="entry" id="f_pay">
-      ${field('d','Дата',`type="date" value="${today()}" required`)}
-      ${field('eur','Сумма, €',`type="text" inputmode="decimal" autocomplete="off" required value="${paidNow?'':P.monthly||''}"`)}
-      ${field('note','Комментарий',`placeholder="${isRent?'например, за декабрь':'например, Nachzahlung 2025'}"`,'full')}
-      <button class="btn full">Добавить платёж</button>
-    </form></section>
-  <section class="card"><h2>Платежи</h2>${table(['Дата','Комментарий','€','<span class="sr">Действия</span>'],rows,'Платежей пока нет.')}</section>
-  ${yrows.length>1?`<section class="card"><h2>По годам</h2>${table(['Год','Оплачено, €'],yrows,'')}</section>`:''}
-  <section class="card"><details><summary>Сумма в месяц</summary><div class="set">
-    ${field('m_m',isRent?'Аренда (Kaltmiete), € в месяц':'Предоплата Nebenkosten, € в месяц',`type="text" inputmode="decimal" autocomplete="off" value="${P.monthly}"`,'full')}
-  </div><button class="btn secondary" id="m_save">Сохранить</button></details></section>`;
-}
 function payBind(kind){
   const P=S[kind], isRent=kind==='rent';
   $('eur').oninput=()=>fieldError('eur','');
@@ -463,7 +523,6 @@ function payBind(kind){
   delBind(i=>{const x=P.payments[+i];return ()=>{const a=S[kind].payments;const k=a.findIndex(y=>y.d===x.d&&y.eur===x.eur&&y.note===x.note);if(k>=0)a.splice(k,1);};},'Платёж удалён.');
   $('m_save').onclick=()=>{const v=numOr('m_m',P.monthly);commit('Сумма сохранена.',()=>{S[kind].monthly=v;});};
 }
-
 /* ---------- summary ---------- */
 const SERIES=[['rent','Аренда','--s-rent'],['nk','Nebenkosten','--s-nk'],['power','Свет','--s-power'],['water','Вода','--s-water'],['oil','Масло','--s-oil']];
 function summaryCalc(){
@@ -489,47 +548,58 @@ function summaryCalc(){
   return {months, full, avg, span};
 }
 function basis(k,n){ if(!n) return ''; const w=n+' '+plural(n,'месяц','месяца','месяцев'); return k==='oil'&&n<12?'по '+w+', отопление':'по '+w; }
+let houseAnimated=false;
 function summaryView(){
   const c=summaryCalc();
-  if(!c.months.length) return `<section class="card"><p class="empty">Расходов пока нет. Начните с вкладки «Свет» или внесите платёж аренды.</p></section>`;
+  if(!c.months.length) return `<header class="hero"><div class="title"><h1>Дом</h1></div><p class="empty-hint">Дом пока пустой. Начните со «Света» — внесите показание счётчика.</p></header>`;
   const y=today().slice(0,4), yearSum=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.total,0);
   const cur=c.months.find(o=>o.key===nowK())||{total:0};
-  const parts=SERIES.filter(([k])=>c.avg[k]>0);
+  const ORDER=['oil','water','power','nk','rent'];               // top floor -> foundation
+  const parts=ORDER.filter(k=>c.avg[k]>0);
+  const H=300, tot=c.avg.total||1;
   const via=[]; for(const id in S.meters) if(S.meters[id].nk) via.push(S.meters[id].name.toLowerCase()); if(S.oil.nk) via.push('масло');
+  const anim=!houseAnimated; houseAnimated=true;
+  const floors=parts.map((k,i)=>`<a class="floor f-${k}" href="#${k}" style="height:${Math.max(52,Math.round(c.avg[k]/tot*H))}px;animation-delay:${(parts.length-1-i)*90}ms"><span class="n">${WNAME[k]}<small>${basis(k,c.span[k])}</small></span><span class="v">${eur(c.avg[k])}</span></a>`).join('');
   const used=SERIES.filter(([k])=>c.months.some(o=>o[k]));
   const rows=c.months.map(o=>`<tr><td>${o.label}${o.key===nowK()?' *':''}</td><td><b>${fmt(o.total)}</b></td>${used.map(([k])=>`<td>${o[k]?fmt(o[k]):'—'}</td>`).join('')}</tr>`).reverse();
   return `
-  <section class="card hero" aria-label="Средний месяц">
-    ${c.full.length?`<p class="lead">Обычный месяц обходится в <span class="num">${eur(c.avg.total)}</span></p>
-    <div class="comp" role="img" aria-label="Состав среднего месяца, подробности в списке ниже">${parts.map(([k,,v])=>`<i style="width:${c.avg[k]/c.avg.total*100}%;background:var(${v})"></i>`).join('')}</div>
-    <ul class="legend">${parts.map(([k,l,v])=>`<li><span class="sw" style="background:var(${v})"></span><span>${l}<br><span class="cap">${basis(k,c.span[k])}</span></span><span class="num">${eur(c.avg[k])}</span><span class="cap num" style="width:3.2em;text-align:right">${fmt(c.avg[k]/c.avg.total*100)}%</span></li>`).join('')}</ul>
-    <p class="note" style="margin-top:4px">Каждая статья усреднена только по тем завершённым месяцам, за которые по ней есть данные.${c.span.oil&&c.span.oil<12?' Масло посчитано по отопительным месяцам — летом месяц выйдет дешевле.':''}</p>`
-    :`<p class="lead">Первый месяц ещё не закончился</p><p class="note" style="margin:0">Среднее появится, когда завершится хотя бы один месяц с данными.</p>`}
-  </section>
-  <section class="card figs" aria-label="Итоги">
-    ${fig(`Всего в ${y}`,eur(yearSum),'включая текущий месяц')}
-    ${fig(MONF[nowK()%12][0].toUpperCase()+MONF[nowK()%12].slice(1),eur(cur.total),'пока внесено')}
-  </section>
-  <section class="card"><h2>Расходы на дом по месяцам, €</h2><div class="chart" style="height:260px"><canvas id="ch" role="img" aria-label="Столбцы расходов по месяцам с разбивкой по статьям; те же числа в таблице ниже"></canvas></div>
-  <p class="note">Свет, вода и масло — по расходу и цене. Аренда и Nebenkosten — по датам платежей.${via.length?` ${esc(via.join(', ')).replace(/^./,s=>s.toUpperCase())} ${via.length>1?'оплачиваются':'оплачивается'} через Nebenkosten и отдельно не считается, чтобы не учесть дважды.`:''}</p></section>
-  <section class="card"><h2>По месяцам, €</h2>${table(['Месяц','Итого'].concat(used.map(s=>s[1])),rows,'')}<p class="note">Звёздочка — текущий месяц: в нём только то, что уже внесено.</p></section>`;
+  <header class="hero">
+    <p class="house-lead">${c.full.length?'Столько стоит дом в обычный месяц':'Первый месяц ещё идёт'}</p>
+    ${parts.length?`<div class="house ${anim?'animate':''}" role="group" aria-label="Из чего складывается обычный месяц">
+      <div class="chimney" aria-hidden="true"></div>
+      <div class="roof" aria-hidden="true"><b>${eur(c.avg.total)}</b></div>
+      <div class="floors">${floors}</div>
+      <div class="ground" aria-hidden="true"></div>
+    </div>`:''}
+    <p class="facts">В ${y} уже <b>${eur(yearSum)}</b>. В ${MONF[nowK()%12].replace(/ь$/,'е').replace(/й$/,'е').replace(/т$/,'те')} пока внесено <b>${eur(cur.total)}</b>.</p>
+    <p class="note">Этаж — это статья, его высота — сколько она стоит в обычный месяц. Нажмите на этаж, чтобы открыть раздел.${c.span.oil&&c.span.oil<12?' Масло посчитано по отопительным месяцам — летом месяц выйдет дешевле.':''}</p>
+  </header>
+  ${chartBlock('Расходы по месяцам, €','Столбцы расходов по месяцам с разбивкой по статьям')}
+  <div class="wrap">
+    <p class="note" style="margin-top:-12px">Свет, вода и масло — по расходу и цене. Аренда и Nebenkosten — по датам платежей.${via.length?` ${esc(via.join(', ')).replace(/^./,s=>s.toUpperCase())} ${via.length>1?'оплачиваются':'оплачивается'} через Nebenkosten и отдельно не считается.`:''}</p>
+    <section class="plate"><h2>По месяцам, €</h2>${table(['Месяц','Итого'].concat(used.map(s=>s[1])),rows,'')}<p class="note mute">Звёздочка — текущий месяц: в нём только то, что уже внесено.</p></section>
+    <p style="text-align:center;margin:28px 0 0"><button class="link" id="logout">Выйти</button></p>
+  </div>`;
 }
 function summaryBind(){
+  if($('logout')) $('logout').onclick=logout;
   const c=summaryCalc(); if(!c.months.length) return;
   const ds=SERIES.filter(([k])=>c.months.some(o=>o[k])).map(([k,l,v])=>({label:l,data:c.months.map(o=>+(o[k]||0).toFixed(2)),color:css(v)}));
-  barChart(shortLabels(c.months.map(o=>o.key)).map((l,i)=>l+(c.months[i].key===nowK()?'*':'')),ds,c.full.length?{label:'Среднее',data:c.months.map(()=>+c.avg.total.toFixed(2))}:null,true);
+  barChart(shortLabels(c.months.map(o=>o.key)).map((l,i)=>l+(c.months[i].key===nowK()?'*':'')),ds,c.full.length?{label:'Обычный месяц',data:c.months.map(()=>+c.avg.total.toFixed(2))}:null,true);
 }
 
 /* ---------- chart ---------- */
 function barChart(labels,series,line,stacked){
   if(!window.Chart||!$('ch')) return;
-  const tx=css('--text-2'), grid=css('--border'), font={family:css('--font'),size:13,weight:'500'};
-  const ds=series.map(s=>({label:s.label,data:s.data,backgroundColor:s.fc?s.fc.map(f=>f?s.color+'59':s.color):s.color,borderColor:s.color,borderWidth:s.fc?s.fc.map(f=>f?{top:2,left:2,right:2,bottom:0}:0):0,borderRadius:4,stack:stacked?'s':undefined,maxBarThickness:44}));
-  if(line) ds.push({label:line.label,type:'line',data:line.data,borderColor:tx,borderDash:[6,4],borderWidth:2,pointRadius:0});
+  const ink=css('--ink')||'#000', bar=css('--bar')||ink, font={family:css('--text'),size:13,weight:'600'};
+  const grid=ink.toLowerCase()==='#fff'||ink.toLowerCase()==='#ffffff'?'rgba(255,255,255,.22)':'rgba(0,0,0,.18)';
+  const ds=series.map(s=>{const col=stacked?s.color:bar; const fc=s.fc||labels.map(l=>/\*$/.test(l));
+    return {label:s.label,data:s.data,backgroundColor:stacked?col:fc.map(f=>f?'transparent':col),borderColor:stacked?(css('--page')||'#000'):col,borderWidth:stacked?{top:2}:fc.map(f=>f?2.5:0),borderSkipped:stacked?'bottom':false,borderRadius:stacked?0:3,stack:stacked?'s':undefined,maxBarThickness:46};});
+  if(line) ds.push({label:line.label,type:'line',data:line.data,borderColor:ink,borderDash:[6,5],borderWidth:2,pointRadius:0});
   const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  chart=new Chart($('ch'),{type:'bar',data:{labels,datasets:ds},options:{maintainAspectRatio:false,animation:rm?false:{duration:250},
-    plugins:{legend:{display:ds.length>1,position:'bottom',labels:{color:tx,font,boxWidth:12,boxHeight:12,padding:14}},tooltip:{titleFont:font,bodyFont:{...font,size:14},callbacks:{label:x=>` ${x.dataset.label}: ${fmt(x.parsed.y,x.parsed.y<10?2:0)}`}}},
-    scales:{x:{stacked,ticks:{color:tx,font,maxRotation:0,autoSkip:false},grid:{display:false},border:{display:false}},y:{stacked,beginAtZero:true,ticks:{color:tx,font,callback:v=>fmt(v)},grid:{color:grid},border:{display:false}}}}});
+  chart=new Chart($('ch'),{type:'bar',data:{labels,datasets:ds},options:{maintainAspectRatio:false,animation:rm?false:{duration:300},
+    plugins:{legend:{display:ds.length>1,position:'bottom',labels:{color:ink,font,boxWidth:14,boxHeight:14,padding:14}},tooltip:{titleFont:font,bodyFont:{...font,size:14},callbacks:{label:x=>` ${x.dataset.label}: ${fmt(x.parsed.y,x.parsed.y<10?2:0)}`}}},
+    scales:{x:{stacked,ticks:{color:ink,font,maxRotation:0,autoSkip:false},grid:{display:false},border:{color:ink,width:2}},y:{stacked,beginAtZero:true,ticks:{color:ink,font,callback:v=>fmt(v)},grid:{color:grid},border:{display:false}}}}});
 }
 
 /* ---------- app shell ---------- */
@@ -552,20 +622,20 @@ function delBind(fn,msg){
     else {b.dataset.sure=1;b.classList.add('confirm');b.textContent='Удалить?';setTimeout(()=>{if(b.isConnected&&b.dataset.sure){delete b.dataset.sure;b.classList.remove('confirm');b.innerHTML=icon('x');}},4000);}
   });
 }
-const TABS=[['sum','Итого'],['power','Свет'],['water','Вода'],['oil','Масло'],['rent','Аренда'],['nk','Nebenkosten']];
+const NAV=[['sum','Дом','n-sum'],['power','Свет','n-power'],['water','Вода','n-water'],['oil','Масло','n-oil'],['rent','Платежи','n-pay']];
+const TABS=[['sum'],['power'],['water'],['oil'],['rent'],['nk']];
 function render(){
   norm();
   if(!TABS.some(t=>t[0]===tab)) tab='sum';
-  $('hdr').innerHTML=`<button class="link" id="logout" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-2)">${icon('out')}Выйти</button>`;
-  $('logout').onclick=logout;
-  $('tabs').innerHTML=TABS.map(([id,l])=>`<button class="tab" data-t="${id}" ${id===tab?'aria-current="page"':''}>${icon(id)}${l}</button>`).join('');
-  $('tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;try{history.replaceState(null,'','#'+tab);}catch(e){}setStatus('');render();window.scrollTo(0,0);});
+  document.body.dataset.w=tab;
+  const navActive = tab==='nk'?'rent':tab;
+  $('tabs').innerHTML=NAV.map(([id,l,cls])=>`<a href="#${id}" class="${cls}" ${id===navActive?'aria-current="page"':''}><span class="sw" aria-hidden="true"></span>${l}</a>`).join('');
+  try{ document.querySelector('meta[name=theme-color]').content = css('--c') || '#E3E5E6'; }catch(e){}
   if(chart){chart.destroy();chart=null;}
   if(tab==='sum'){$('view').innerHTML=summaryView();summaryBind();}
   else if(tab==='rent'||tab==='nk'){$('view').innerHTML=payView(tab);payBind(tab);}
   else if(tab==='oil'){$('view').innerHTML=oilView();oilBind();}
   else {$('view').innerHTML=meterView(tab);meterBind(tab);}
-  const a=$('tabs').querySelector('[aria-current]'); if(a&&a.scrollIntoView) a.scrollIntoView({block:'nearest',inline:'nearest'});
   if(lastFocus&&$(lastFocus)){const sec=$(lastFocus).closest('section');if(sec){sec.tabIndex=-1;sec.focus({preventScroll:true});}} lastFocus=null;
 }
 
@@ -614,8 +684,9 @@ async function load(keepStatus){
   }catch(e){ if(e.message!=='401') setStatus('Не удалось загрузить данные: '+e.message+'.',true); }
 }
 function showLogin(err){
+  document.body.dataset.w='sum';
   $('tabs').innerHTML=''; $('hdr').innerHTML=''; setStatus('');
-  $('view').innerHTML=`<section class="card login"><h2>Вход</h2>
+  $('view').innerHTML=`<section class="plate login"><h2>Вход</h2>
     <form id="f_login" class="entry" style="grid-template-columns:1fr">
       ${field('pw','Пароль','type="password" autocomplete="current-password" required autofocus')}
       <p class="cap ${err?'bad':''}" id="lerr" role="alert" style="margin:0">${err||'На этом устройстве вход сохранится на 90 дней.'}</p>
@@ -632,10 +703,9 @@ function showLogin(err){
 async function logout(){ try{await fetch('/api/logout',{method:'POST',credentials:'same-origin'});}catch(e){} showLogin('Вы вышли.'); }
 window.addEventListener('online',()=>{ if(getPending()) retryPending(); });
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&getPending()) retryPending(); });
-window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h&&h!==tab){tab=h;render();}});
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1)||'sum';if(h!==tab){tab=h;setStatus('');render();window.scrollTo(0,0);}});
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{ if($('tabs').children.length) render(); });
 load();
 </script>
-<style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
 </body>
 </html>

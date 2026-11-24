@@ -1,96 +1,63 @@
-# Design System — «Дом: счётчики и расходы»
+# Design System — «Дом: счётчики и расходы» (v2, «Дом из цветных этажей»)
 
-Global source of truth for `public/index.html`. Page overrides, if any, go to `pages/<page>.md`.
+Replaces v1 (Swiss dashboard), which the client rejected as generic. Source: ui-ux-pro-max style
+match **Bauhaus** (geometric, primary/signal colours, mechanical, tactile; "mobile-first apps needing
+high personality") + google-fonts matches **Unbounded** and **Golos Text** (both full Cyrillic).
+Refused from the Bauhaus row: hard offset shadows and ALL-CAPS headlines (costume, not information).
 
-Derived with ui-ux-pro-max (`--design-system --density 8 --variance 3 --motion 2` + domain searches
-for typography, color and charts). Deviations from the raw tool output are listed at the end.
+## Idea
+The home is a house. Every cost is a floor of that house, painted in its own signal colour —
+and every section of the app *is* that colour. You learn the colours once and the whole app
+becomes readable at a glance: yellow is electricity, blue is water, rust is heating oil,
+green is rent, graphite is Nebenkosten.
 
-## 1. Product & context
-- Personal household tracker: electricity, cold water, heating-oil dipstick, rent, Nebenkosten, monthly summary.
-- One user, Russian UI, mostly iPhone (375–430 px), sometimes desktop. Light + dark (follows OS).
-- Job of the UI: enter a number in seconds, then read a few figures at a glance. Numbers are the product.
+- **Дом (home screen):** a drawn house; floor heights = what each item costs in a typical month,
+  the roof carries the total. Floors are links into their section. The only orchestrated motion:
+  floors stack up from the foundation on first open (off under reduced motion).
+- **Section screens:** the whole page is the section colour. The last reading sits on a mechanical
+  counter, the facts sit on a "Typenschild" — the meter's type plate — as label/value rows.
 
-## 2. Style
-**Minimalism & Swiss Style** — clean, functional, grid-based, high contrast, essential.
-- Flat surfaces, 1px hairline borders, no gradients, no glass, no decorative shadows.
-- Hierarchy comes from type size/weight and spacing, not from colour.
-- Icons: inline SVG, Lucide style (24 grid, 1.75 stroke, round caps). **No emoji as icons.**
-
-## 3. Color tokens
-Base palette: "Personal Finance Tracker" (trust blue + profit green). Light mode derived for the same hues.
-Status colours are never the only signal — always paired with text ("оплачено", "+12 €", "94 % от нормы").
-
-| Token | Light | Dark | Use |
+## Colour
+| Token | Value | On-colour | Use |
 |---|---|---|---|
-| `--bg` | `#F4F6FA` | `#0F172A` | page |
-| `--surface` | `#FFFFFF` | `#192134` | cards, tiles |
-| `--surface-2` | `#EEF2F7` | `#101A34` | inputs, table zebra, chips |
-| `--text` | `#0F172A` | `#F1F5F9` | primary text & numbers |
-| `--text-2` | `#475569` | `#94A3B8` | labels, captions (≥4.5:1 on surface) |
-| `--border` | `#E2E8F0` | `rgba(255,255,255,.08)` | hairlines |
-| `--primary` | `#1E40AF` | `#60A5FA` | buttons, active tab, links, focus |
-| `--on-primary` | `#FFFFFF` | `#0F172A` | text on primary |
-| `--good` | `#047857` | `#34D399` | within norm, paid, overpaid |
-| `--bad` | `#B91C1C` | `#F87171` | over norm, unpaid, underpaid |
-| `--warn` | `#B45309` | `#FBBF24` | soon (oil < 45 days) |
-| `--ring` | `#1E40AF` | `#FFFFFF` | focus outline |
+| `--concrete` | `#E3E5E6` | `#000` | Дом page, login |
+| `--power` | `#FFCC00` | `#000` | Свет (contrast 13.9:1) |
+| `--water` | `#0047AB` | `#FFF` | Вода (8.6:1) |
+| `--oil` | `#B23A0A` | `#FFF` | Масло (5.9:1) |
+| `--rent` | `#0B6E4F` | `#FFF` | Аренда (6.3:1) |
+| `--nk` | `#3D4A5C` | `#FFF` | Nebenkosten (9.0:1) |
+| `--plate` | `#FFF` | `#000` | inputs, tables, settings |
+| `--bad` | `#C1121F` | — | errors, over norm (always with text) |
 
-Chart series (fixed per category, same in every view; light / dark):
-rent `#6D28D9`/`#A78BFA` · nebenkosten `#BE185D`/`#F472B6` · power `#1D4ED8`/`#60A5FA` · water `#0891B2`/`#67E8F9` · oil `#C2410C`/`#FB923C` · norm/average line = `--text-2`, dashed.
+Text on a coloured page always uses the full on-colour — hierarchy comes from size and weight,
+never from a faded tint. Dark mode: page `#000`, the hero band keeps the section colour,
+plates `#1A1A1A` with white text. Chart bars on black use lifted tints for ≥3:1: water `#4D8FE6`, oil `#F06A33`, rent `#2FB383`, Nebenkosten `#8FA0B8` (yellow as is).
 
-## 4. Typography
-Pairing **"Dashboard Data"**: **Fira Sans** (UI + figures) with **Fira Code** for meter readings only.
-Both have full Cyrillic. Load 400/500/600/700 from Google Fonts, `display=swap`, system-ui fallback.
+## Type
+- **Unbounded** 500–700 — screen titles, the house total, every big figure. Wide, round, Cyrillic-native.
+- **Golos Text** 400–600 — labels, sentences, tables, inputs. All figures `tabular-nums`.
+- Scale: 44 title · 28 big figure · 20 floor value · 17 section heading · 16 body/table · 14 caption · 13 floor (nav labels).
 
-All numbers: `font-variant-numeric: tabular-nums lining-nums;` right-aligned in tables.
+## Shape
+- Plates: 6 px radius, no shadow, 2 px on-colour border only on the Typenschild.
+- Inputs: 6 px radius, 2 px border, 52 px tall, 18 px text.
+- Primary action: black pill (on yellow/concrete) or white pill (on dark colours), 56 px tall.
+- House: square floors, triangular roof (clip-path), chimney.
 
-| Role | Size / line | Weight | Notes |
-|---|---|---|---|
-| KPI value | 28 / 32 | 600 | `--text`, tabular |
-| Page title | 22 / 28 | 700 | |
-| Section title | 17 / 24 | 600 | |
-| Body, inputs, table cells | 16 / 24 | 400 | inputs ≥16px (prevents iOS zoom) |
-| Label / caption | 14 / 20 | 500 | `--text-2`, never smaller |
-| Micro (units, chart ticks) | 13 / 18 | 500 | the floor — nothing below 13 px |
+## Navigation
+Bottom bar (5 items ≤ 5 rule): Дом · Свет · Вода · Масло · Платежи. Black bar; every item carries its
+colour square; the active item is filled with its colour. Платежи has a two-way switch
+Аренда / Nebenkosten. Deep links: `#sum #power #water #oil #rent #nk`.
 
-## 5. Spacing, shape, layout (density 8 — dashboard)
-- Spacing scale: 4 · 8 · 12 · 16 · 24 · 32 px.
-- Radius: 12 px cards/tiles, 10 px inputs/buttons, 999 px chips/tabs.
-- Content max-width 760 px, side padding 16 px, respects `env(safe-area-inset-*)`.
-- KPI grid: 2 columns on mobile, 4 on ≥ 720 px. Cards stack with 16 px gap.
+## Feedback
+Status toast sits just above the bottom bar (thumb zone), `role=status`; black for success,
+red for errors, may carry one action (Отменить / Повторить). Field errors inline under the field.
+Offline saves are kept on the device and retried.
 
-## 6. Components
-- **Tab bar** — horizontal scrollable chips at the top (6 sections), sticky; active = primary fill. Each chip has icon + text label, ≥44 px tall.
-- **Entry card** — visible labels above fields (no placeholder-only labels), date + value + primary button; on mobile button full-width.
-- **KPI tile** — label (caption) → value (KPI) → sub-line (caption). Optional progress bar 8 px, value in text too.
-- **Data table** — 16 px cells, 12 px vertical padding, right-aligned tabular numbers, units in header, sticky first column only if it scrolls.
-- **Odometer hero** (meter pages) — dark drums with a centre seam (gradient + inset highlight). Deliberate exception to "no gradients": it depicts the physical counter. Water decimals on red drums. Unit sits outside the drum box.
-- **Number inputs** — `type=text inputmode=decimal`, parsed with comma or dot (Russian keyboard gives a comma). Errors inline under the field (`aria-invalid`, `aria-describedby`), never only in the status line.
-- **Status line** — sticky together with the tab bar; success green, error red, may carry one action (Отменить / Повторить).
-- **Offline** — a failed save is kept on the device and retried on reconnect; the status says it is not yet on the server.
-- **Delete** — icon button with `aria-label`, 44×44 hit area, two-step confirm ("Удалить?").
-- **Details/settings** — collapsible card at the bottom of each page.
+## Charts
+Bars in the page's on-colour (light) or section colour (dark); current/forecast month outlined
+and marked "*". Дом chart: stacked in the five signal colours. Every chart is followed by a table.
 
-## 7. Charts (Chart.js)
-- Monthly values → vertical bars; summary → stacked bars + dashed average line.
-- Gridlines `--border`, ticks 13 px `--text-2`, no chart borders. Rounded bar tops 4 px.
-- Forecast / current month: same colour at 35 % opacity with a solid outline **and** "*" in the label.
-- X labels: month only, year on the first bar and on January; no rotation.
-- Every chart is followed by a table with the same numbers (a11y fallback).
-
-## 8. Motion (2 — subtle)
-- 150–200 ms colour/opacity transitions on press/hover only. No scroll reveals.
-- Respect `prefers-reduced-motion` (disable chart animation).
-
-## 9. Accessibility & interaction
-- Contrast ≥ 4.5:1 for all text incl. captions; ≥ 3:1 for borders of inputs.
-- Visible focus ring 2 px `--ring`, offset 2 px. Touch targets ≥ 44×44.
-- `inputmode="decimal"` for numbers; labels bound to inputs.
-- Never colour-only status.
-
-## Deviations from raw tool output
-- Tool's `--design-system` suggested Caveat + Quicksand (handwritten). Rejected: unreadable for figures.
-  Replaced with the tool's own typography-domain match "Dashboard Data" (Fira Code + Fira Sans).
-- Tool's landing "Product Demo" pattern ignored — this is an app, not a landing page.
-- GSAP scroll reveal ignored (motion 2, no GSAP dependency needed).
-- "Avoid pure white backgrounds": page bg is `#F4F6FA`; only cards are white.
+## Floor
+Contrast ≥ 4.5:1 everywhere, touch ≥ 44 px, focus ring 3 px in on-colour, reduced motion respected,
+safe areas respected, no emoji icons (Lucide SVG).
