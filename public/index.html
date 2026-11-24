@@ -7,47 +7,52 @@
 <title>Дом: счётчики и расходы</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* design-system/home-meters/MASTER.md — v2 «Дом из цветных этажей» */
 :root{
-  --concrete:#E3E5E6;--power:#FFCC00;--water:#0047AB;--oil:#B23A0A;--rent:#0B6E4F;--nk:#3D4A5C;
+  --concrete:#DCDEDF;--power:#E8C547;--water:#2C5A8C;--oil:#9C4422;--rent:#2E6A54;--nk:#46505E;
   --s-power:var(--power);--s-water:var(--water);--s-oil:var(--oil);--s-rent:var(--rent);--s-nk:var(--nk);
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;--space-7:48px;
   --bad:#C1121F;--plate:#FFFFFF;--plate-ink:#000;--plate-line:#D5D8DA;--plate-mute:#3F4549;
   --display:'Unbounded',system-ui,sans-serif;--text:'Golos Text',system-ui,-apple-system,sans-serif;
-  --c:var(--concrete);--on:#000;--page:var(--c);--ink:var(--on);--bar:var(--on);
+  --c:var(--concrete);--on:#000;--tint:#EEEFF0;--dbar:#2B2E30;
   color-scheme:light;
 }
-body[data-w="power"]{--c:var(--power);--on:#000}
-body[data-w="water"]{--c:var(--water);--on:#fff}
-body[data-w="oil"]{--c:var(--oil);--on:#fff}
-body[data-w="rent"]{--c:var(--rent);--on:#fff}
-body[data-w="nk"]{--c:var(--nk);--on:#fff}
+body[data-w="power"]{--c:var(--power);--on:#000;--tint:#F6F0DA;--dbar:#7A6200}
+body[data-w="water"]{--c:var(--water);--on:#fff;--tint:#E6ECF2;--dbar:var(--water)}
+body[data-w="oil"]{--c:var(--oil);--on:#fff;--tint:#F3E9E4;--dbar:var(--oil)}
+body[data-w="rent"]{--c:var(--rent);--on:#fff;--tint:#E5EEEA;--dbar:var(--rent)}
+body[data-w="nk"]{--c:var(--nk);--on:#fff;--tint:#E8E9EC;--dbar:var(--nk)}
 @media (prefers-color-scheme:dark){
-  :root{color-scheme:dark;--plate:#1A1A1A;--plate-ink:#fff;--plate-line:#2E2E2E;--plate-mute:#C9CDD0;--concrete:#2B2E30;--bad:#FF6B6B}
-  body[data-w]{--page:#000!important;--ink:#fff;--bar:var(--c)}
-  body[data-w] .hero{--ink:var(--on)}
-  body{--s-water:#4D8FE6;--s-oil:#F06A33;--s-rent:#2FB383;--s-nk:#8FA0B8}
-  body[data-w="water"]{--bar:#4D8FE6}body[data-w="oil"]{--bar:#F06A33}body[data-w="rent"]{--bar:#2FB383}body[data-w="nk"]{--bar:#8FA0B8}
-  body[data-w="sum"]{--on:#fff}
-  body[data-w="power"] .hero, body[data-w="power"] .nav a[aria-current]{--ink:#000}
+  :root{color-scheme:dark;--plate:#1C1D1F;--plate-ink:#F2F2F2;--plate-line:#2F3134;--plate-mute:#C2C6CA;--bad:#FF7A7A}
+  body[data-w]{--tint:#0E0F10;--page-ink:#F2F2F2}
+  body[data-w="sum"]{--c:#26282A;--on:#F2F2F2;--dbar:#C2C6CA}
+  body[data-w="power"]{--c:#3B3212;--on:#F2F2F2;--dbar:#E8C547}
+  body[data-w="water"]{--c:#16293F;--on:#F2F2F2;--dbar:#6F9BD0}
+  body[data-w="oil"]{--c:#3A1F14;--on:#F2F2F2;--dbar:#D9825C}
+  body[data-w="rent"]{--c:#16302A;--on:#F2F2F2;--dbar:#6FB59A}
+  body[data-w="nk"]{--c:#23282F;--on:#F2F2F2;--dbar:#A3AEBD}
+  body{--s-water:#6F9BD0;--s-oil:#D9825C;--s-rent:#6FB59A;--s-nk:#A3AEBD}
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{--page:var(--c);--ink:var(--on);--bar:var(--on);overflow-x:clip;margin:0;background:var(--page);color:var(--ink);font:400 16px/1.5 var(--text);font-variant-numeric:tabular-nums;transition:background-color .25s}
-main{max-width:640px;margin:0 auto;padding:0 0 calc(120px + env(safe-area-inset-bottom))}
+body{--page:var(--tint);--ink:var(--page-ink,#000);--bar:var(--dbar);overflow-x:clip;margin:0;background:var(--page);color:var(--ink);font:400 16px/1.5 var(--text);font-variant-numeric:tabular-nums;transition:background-color .25s}
+main{max-width:640px;margin:0 auto;padding:0 0 calc(168px + env(safe-area-inset-bottom))}
+@media (min-width:700px){main{margin-top:var(--space-5)}.hero{border-radius:10px}}
 svg.i{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 :focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-::selection{background:var(--ink);color:var(--page)}
+::selection{background:color-mix(in srgb,var(--c) 45%,transparent);color:inherit}
 .wrap{padding:0 max(20px,env(safe-area-inset-left)) 0 max(20px,env(safe-area-inset-right))}
 
 /* hero band: the section colour, in both modes */
-.hero{background:var(--c);color:var(--on);--ink:var(--on);padding:calc(20px + env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) 24px max(20px,env(safe-area-inset-left))}
-.title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 18px}
-.title h1{font:600 44px/1 var(--display);letter-spacing:-.02em;margin:0}
-.title span{font-weight:500;font-size:15px}
-.since{font-size:16px;font-weight:500;margin:12px 0 0}
+.hero{background:var(--c);color:var(--on);--ink:var(--on);padding:calc(var(--space-5) + env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) var(--space-5) max(20px,env(safe-area-inset-left))}
+.title{margin:0 0 var(--space-4)}
+.title h1{font:600 clamp(30px,9.4vw,40px)/1.05 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+.title span{display:block;font-weight:500;font-size:15px;margin-top:var(--space-2)}
+.since{font-size:16px;font-weight:500;margin:var(--space-3) 0 0}
+p{text-wrap:pretty}
 
 /* mechanical counter */
 .odo-row{display:flex;align-items:flex-end;gap:10px}
@@ -57,18 +62,21 @@ svg.i{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-widt
 .odo-u{font:600 18px/1 var(--display);padding-bottom:8px}
 
 /* plates */
-.plate{background:var(--plate);color:var(--plate-ink);border-radius:6px;padding:18px;margin:16px 0}
-.plate h2{font:600 17px/1.3 var(--display);margin:0 0 14px}
-.hero .plate{margin:20px 0 0}
+.plate{background:var(--plate);color:var(--plate-ink);border-radius:8px;padding:var(--space-4) 18px 18px;margin:var(--space-4) 0}
+.plate h2{font:600 17px/1.3 var(--display);margin:0 0 var(--space-3)}
+.hero .plate{margin:var(--space-5) 0 0}
 .mute{color:var(--plate-mute);font-size:14px;line-height:20px;font-weight:500}
 .note{font-size:15px;line-height:22px;margin:12px 0 0}
 
 /* forms */
 form.entry{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 form.entry .full{grid-column:1/-1}
+.entry-reading{grid-template-columns:1fr 1fr;align-items:end}
+.entry-reading .btn{min-height:52px}
+.entry-reading input#v{font:500 24px/28px var(--display);letter-spacing:.02em}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field label{font-size:14px;line-height:20px;font-weight:600}
-input[type=date]{font-size:17px;padding:12px 8px}
+input[type=date]{font-size:16px;padding:12px 6px;min-width:0}
 input,select{font:500 18px/24px var(--text);font-variant-numeric:tabular-nums;width:100%;min-height:52px;padding:12px;border:2px solid var(--plate-ink);border-radius:6px;background:var(--plate);color:var(--plate-ink);caret-color:var(--plate-ink)}
 input::placeholder{color:var(--plate-mute);opacity:1;font-weight:400}
 input[aria-invalid="true"]{border-color:var(--bad)}
@@ -78,27 +86,28 @@ input[aria-invalid="true"]{border-color:var(--bad)}
 .btn:active{transform:scale(.98)}
 .btn.ghost{background:transparent;color:var(--plate-ink);border:2px solid var(--plate-ink);min-height:48px}
 .btn[disabled]{opacity:.6}
-.on-page .btn{background:var(--ink);color:var(--page)}
+.hero .on-page .btn{background:var(--on);color:var(--c)}
 .check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:16px}
 .check input{width:22px;height:22px;min-height:0;accent-color:var(--plate-ink)}
 .link{background:none;border:0;padding:0;color:inherit;font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:44px}
 
 /* Typenschild — the meter's type plate */
-.tp{border:2px solid var(--ink);border-radius:6px;margin:20px 0}
-.tp-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:14px 16px;border-top:2px solid var(--ink)}
+.tp{border:1.5px solid var(--ink);border-radius:8px;margin:var(--space-5) 0}
+.tp-row{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-3);padding:14px var(--space-4);border-top:1px solid color-mix(in srgb,var(--ink) 30%,transparent)}
 .tp-row:first-child{border-top:0}
 .tp-row .l{font-size:16px;font-weight:500;line-height:1.35}
 .tp-row .l small{display:block;font-size:14px;font-weight:500;margin-top:2px}
-.tp-row .v{font:600 26px/1.1 var(--display);white-space:nowrap;text-align:right}
+.tp-row .v{font:500 24px/1.15 var(--display);white-space:nowrap;text-align:right}
 .tp-row .v small{font:600 15px var(--text)}
-.tp-row.alert .v{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:5px}
-.ruler{height:10px;border:2px solid var(--ink);border-radius:5px;margin-top:8px;overflow:hidden;width:min(220px,100%)}
+.tp-row.alert .v{color:var(--bad)}
+.bad{color:var(--bad)}
+.ruler{height:8px;border:1.5px solid var(--ink);border-radius:4px;margin-top:var(--space-2);overflow:hidden;width:min(200px,100%)}
 .ruler i{display:block;height:100%;background:var(--ink)}
-.empty-hint{font-size:17px;font-weight:500;margin:20px 0}
+.empty-hint{font-size:17px;font-weight:500;margin:var(--space-5) 0}
 
 /* sections on page */
-.sec{margin:28px 0}
-.sec h2{font:600 20px/1.25 var(--display);margin:0 0 12px}
+.sec{margin:var(--space-6) 0 var(--space-4)}
+.sec h2{font:600 18px/1.3 var(--display);margin:0 0 var(--space-3)}
 .chart{position:relative;height:230px}
 
 /* tables on plates */
@@ -121,66 +130,69 @@ details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
 .set .full{grid-column:1/-1}
 
 /* the house */
-.house-lead{font:600 30px/1.15 var(--display);letter-spacing:-.015em;margin:0 0 22px}
+.house-lead{font:600 26px/1.2 var(--display);letter-spacing:-.01em;margin:0 0 var(--space-5);text-wrap:balance}
 .house{position:relative;width:min(100%,360px);margin:0 auto}
 .roof{position:relative;height:118px;margin:0 -12px}
-.roof::before{content:"";position:absolute;inset:0;background:#000;clip-path:polygon(50% 0,100% 100%,0 100%)}
-.roof b{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font:700 26px/1 var(--display)}
-.chimney{position:absolute;right:22%;top:24px;width:26px;height:54px;background:#000}
-.floors{display:flex;flex-direction:column;border:3px solid #000;border-top:0}
-.floor{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;text-decoration:none;border-top:3px solid #000;transform-origin:bottom;min-height:52px}
+.roof::before{content:"";position:absolute;inset:0;background:#26282A;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.roof b{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font:600 26px/1 var(--display)}
+.chimney{position:absolute;right:22%;top:24px;width:26px;height:54px;background:#26282A}
+.floors{display:flex;flex-direction:column;border:2px solid #26282A;border-top:0}
+.floor{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;text-decoration:none;border-top:2px solid #26282A;transform-origin:bottom;min-height:52px}
 .floor:first-child{border-top:0}
 .floor .n{font:600 16px/1.2 var(--text)}
-.floor .n small{display:block;font-size:13px;font-weight:500}
-.floor .v{font:600 20px/1 var(--display);white-space:nowrap}
+.floor .n small{display:block;font-size:14px;font-weight:500}
+.floor .v{font:500 20px/1 var(--display);white-space:nowrap}
 .floor.f-power{background:var(--power);color:#000}.floor.f-water{background:var(--water);color:#fff}.floor.f-oil{background:var(--oil);color:#fff}.floor.f-rent{background:var(--rent);color:#fff}.floor.f-nk{background:var(--nk);color:#fff}
-.ground{height:10px;background:#000;margin:0 -12px;border-radius:2px}
-@media (prefers-color-scheme:dark){.roof::before,.chimney,.ground{background:#fff}.roof b{color:#000}.floors,.floor{border-color:#fff}}
+.ground{height:8px;background:#26282A;margin:0 -12px;border-radius:2px}
+@media (prefers-color-scheme:dark){.roof::before,.chimney,.ground{background:#C2C6CA}.roof b{color:#000}.floors,.floor{border-color:#C2C6CA}}
 @keyframes rise{from{transform:scaleY(0)}to{transform:none}}
-.house.animate .floor{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.house.animate .floor{animation:rise .45s cubic-bezier(.25,1,.5,1) both}
 .house.animate .roof,.house.animate .chimney{animation:drop .45s cubic-bezier(.2,.8,.2,1) both}
 @keyframes drop{from{transform:translateY(-24px);opacity:0}to{transform:none;opacity:1}}
-.facts{font-size:18px;line-height:1.5;font-weight:500;margin:24px 0 0}
-.facts b{font:600 18px var(--display)}
+.mix{display:flex;height:10px;border-radius:3px;overflow:hidden;gap:1px;min-width:90px;background:var(--plate-line)}
+.mix i{display:block;height:100%}
+.facts{font-size:17px;line-height:1.55;font-weight:500;margin:var(--space-5) 0 0}
+.facts b{font:500 17px var(--display)}
 
 /* payments */
-.switch{display:flex;gap:6px;background:rgba(0,0,0,.18);padding:4px;border-radius:999px;margin:0 0 18px;width:max-content}
+.switch{display:flex;gap:6px;background:color-mix(in srgb,var(--on) 14%,transparent);padding:4px;border-radius:999px;margin:0 0 18px;width:max-content}
 .switch a{min-height:44px;display:flex;align-items:center;padding:0 16px;border-radius:999px;color:var(--on);text-decoration:none;font-weight:600}
 .switch a[aria-current]{background:var(--on);color:var(--c)}
 .strip{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-.mo{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0;border:2px solid var(--on);border-radius:6px;font-size:14px;font-weight:600}
-.mo .ic{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;border:2px dashed var(--on)}
-.mo.paid{background:var(--on);color:var(--c)}
-.mo.paid .ic{border:0;background:var(--c);color:var(--on)}
+.mo{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0;border:1.5px solid color-mix(in srgb,var(--on) 45%,transparent);border-radius:8px;font-size:14px;font-weight:600}
+.mo .ic{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;border:1.5px dashed var(--on)}
+.mo.paid{background:color-mix(in srgb,var(--on) 16%,transparent);border-color:transparent}
+.mo.paid .ic{border:0;background:var(--on);color:var(--c)}
 .mo.paid .ic svg{width:18px;height:18px;stroke-width:3}
-.mo.before{border-style:dashed;opacity:.7}.mo.before .ic{border-color:transparent}
-.mo.now:not(.paid){border-width:3px}
+.mo.before{border-style:dashed}.mo.before .ic{border-color:transparent}
+.mo.now:not(.paid){border-color:var(--on);border-width:2px}
 
 /* oil tank */
 .tank-wrap{display:flex;gap:18px;align-items:stretch}
 .tank{width:84px;min-height:150px;border:3px solid var(--on);border-radius:16px;position:relative;overflow:hidden;flex:none}
 .tank i{position:absolute;left:0;right:0;bottom:0;background:var(--on)}
 .tank-nums{display:flex;flex-direction:column;gap:4px;justify-content:center}
-.big{font:600 34px/1.05 var(--display)}
+.big{font:500 32px/1.05 var(--display)}
 .big small{font:600 16px var(--text)}
 
 /* bottom bar */
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#000;padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));display:flex;justify-content:center}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#151617;padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));display:flex;justify-content:center}
 .nav div{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:100%;max-width:520px}
-.nav a{--sw:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:56px;border-radius:10px;color:#fff;text-decoration:none;font:600 13px/1 var(--text)}
+.nav a{--sw:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:56px;border-radius:10px;color:#fff;text-decoration:none;font:600 14px/1 var(--text)}
 .nav a .sw{width:16px;height:16px;border-radius:3px;background:var(--sw);box-shadow:0 0 0 1.5px rgba(255,255,255,.5)}
 .nav a[aria-current]{background:var(--sw);color:var(--on-sw,#fff)}
 .nav a[aria-current] .sw{box-shadow:0 0 0 2px currentColor}
-.nav .n-sum{--sw:var(--concrete);--on-sw:#000}.nav .n-power{--sw:var(--power);--on-sw:#000}.nav .n-water{--sw:var(--water)}.nav .n-oil{--sw:var(--oil)}.nav .n-pay{--sw:var(--rent)}
-@media (prefers-color-scheme:dark){.nav .n-sum{--sw:#E3E5E6}}
+.nav .n-sum{--sw:#4A4D50;--on-sw:#fff}.nav .n-power{--sw:var(--power);--on-sw:#000}.nav .n-water{--sw:var(--water)}.nav .n-oil{--sw:var(--oil)}.nav .n-pay{--sw:var(--rent)}
+@media (prefers-color-scheme:dark){.nav .n-power{--sw:#E8C547}.nav .n-water{--sw:#2C5A8C}.nav .n-oil{--sw:#9C4422}.nav .n-pay{--sw:#2E6A54}}
 .nav a:focus-visible{outline-color:#fff}
 
 /* status toast above the bar */
-#status{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:11;max-width:520px;margin:0 auto;padding:12px 16px;border-radius:10px;background:#000;color:#fff;font-size:15px;line-height:21px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+#status{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));transition:opacity .2s;z-index:11;max-width:520px;margin:0 auto;padding:12px 16px;border-radius:10px;background:#000;color:#fff;font-size:15px;line-height:21px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 #status:empty{display:none}
 #status.err{background:var(--bad)}
+#status.wait{background:#2B2E30}
 #status .link{min-height:0;margin-left:6px;color:#fff}
-@media (prefers-color-scheme:dark){#status{background:#fff;color:#000}#status .link{color:#000}#status.err{background:#FF6B6B;color:#000}}
+@media (prefers-color-scheme:dark){#status{background:#F2F2F2;color:#000}#status .link{color:#000}#status.err{background:#FF7A7A;color:#000}}
 
 .login{max-width:400px;margin:14vh auto 0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -330,10 +342,10 @@ function meterView(id){
   if(c.months.length){
     const pct=M.norm?c.year/M.norm*100:null, over=pct!=null&&pct>100;
     tp+=tpRow('За год выйдет',`${fmt(c.year,w?1:0)} <small>${u}</small>`, pct!=null?`${fmt(pct)}% от нормы ${fmt(M.norm)} — ${over?'выше нормы':'в норме'}`:'норма не задана', over?'alert':'', pct!=null?`<span class="ruler" aria-hidden="true" style="display:block"><i style="width:${Math.min(pct,100)}%"></i></span>`:'');
-    tp+=tpRow('В день',`${fmt(c.daily,rd)} <small>${u}</small>`,`за последний период ${fmt(c.lastRate,rd)} ${u}`);
+    tp+=tpRow('В день',`${fmt(c.daily,rd)} <small>${u}</small>`,`за последний период ${fmt(c.lastRate,rd)}&nbsp;${u}`);
     tp+=tpRow('Год обойдётся в',eur(c.yearCost),`примерно ${eur(c.yearCost/12)} в месяц`);
     if(M.abs){const bal=c.paid-c.costTotal;tp+=tpRow('Abschlag '+eur(M.abs)+' в месяц',(bal>=0?'+':'−')+eur(Math.abs(bal)),bal>=0?'переплата, вернут':'недоплата, придётся доплатить',bal<0?'alert':'');}
-    else tp+=tpRow('С начала учёта',eur(c.costTotal),`${fmt(c.used,w?1:0)} ${u} за ${fmt(c.days)} ${DAYSG(c.days)}`);
+    else tp+=tpRow('С начала учёта',eur(c.costTotal),`${fmt(c.used,w?1:0)}&nbsp;${u} за ${fmt(c.days)}&nbsp;${DAYSG(c.days)}`);
   }
   const mrows=c.months.map(o=>{
     const q=o.fc?o.fcQty:o.qty, cost=o.fc?o.fcQty*c.ppu+M.base/12:o.cost, n=o.fc?M.norm/365*o.dim:o.norm, over=M.norm&&q>n;
@@ -346,10 +358,11 @@ function meterView(id){
     ${last?odometer(last[1],u):''}
     ${last?`<p class="since">${since}</p>`:`<p class="empty-hint">Показаний пока нет. Перепишите число со счётчика — это десять секунд.</p>`}
     <section class="plate" aria-label="Новое показание">
-      <form class="entry" id="f_read">
+      <form class="entry entry-reading" id="f_read">
+        ${field('v',`Показание, ${u}`,`type="text" inputmode="decimal" autocomplete="off" required aria-describedby="vhint" ${last?`placeholder="${fmt(last[1],w?3:0).replace(/\s/g,'')}"`:''}`,'full')}
+        <p class="mute full" id="vhint" style="margin:-4px 0 0">${last?`Прошлое показание — ${fmt(last[1],w?3:0)} ${u}, ${longDate(last[0])}.`:'Перепишите все цифры со счётчика.'}</p>
         ${field('d','Дата',`type="date" value="${today()}" required`)}
-        ${field('v',`Показание, ${u}`,`type="text" inputmode="decimal" autocomplete="off" required ${last?`placeholder="${fmt(last[1],w?3:0).replace(/\s/g,'')}"`:''}`)}
-        <button class="btn full">${icon('plus')}Добавить показание</button>
+        <button class="btn">${icon('plus')}Добавить</button>
       </form>
     </section>
   </header>
@@ -380,7 +393,8 @@ function oilView(){
   if(c.daily!=null){
     tp+=tpRow('Сейчас уходит',`${fmt(c.recent,1)} <small>л/день</small>`,'по последним ~60 дням');
     tp+=tpRow('В среднем',`${fmt(c.daily,1)} <small>л/день</small>`,`за ${fmt(c.days)} ${DAYSG(c.days)}`);
-    tp+=tpRow('Отопление в месяц',c.ppl?eur(c.recent*30.4*c.ppl):'—',c.ppl?`по ${fmt(c.ppl,2)} € за литр`:'внесите заправку с ценой');
+    const full=c.months.filter(o=>!o.partial&&o.key<nowK()), avgM=c.ppl&&full.length?full.reduce((t,o)=>t+o.qty*c.ppl,0)/full.length:null;
+    tp+=tpRow('Отопление в месяц сейчас',c.ppl?eur(c.recent*30.4*c.ppl):'—',c.ppl?`по текущему темпу и ${fmt(c.ppl,2)}&nbsp;€/л${avgM?`; в среднем за месяц ${eur(avgM)} — эта цифра на «Доме»`:''}`:'внесите заправку с ценой');
     tp+=tpRow('Закончится около',c.daysLeft!=null?fd(new Date(Date.now()+c.daysLeft*DAY).toISOString().slice(0,10)):'—','при нынешнем темпе',c.daysLeft!=null&&c.daysLeft<45?'alert':'');
   }
   const mrows=c.months.map(o=>{const q=o.fc?o.fcQty:o.qty;return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td>${fmt(q)}</td><td>${c.ppl?fmt(q*c.ppl,2):'—'}</td></tr>`}).reverse();
@@ -456,9 +470,9 @@ function payView(kind){
   return `
   <header class="hero">
     <nav class="switch" aria-label="Вид платежей"><a href="#rent" ${isRent?'aria-current="page"':''}>Аренда</a><a href="#nk" ${!isRent?'aria-current="page"':''}>Nebenkosten</a></nav>
-    <div class="title"><h1 style="font-size:${isRent?44:34}px">${WNAME[kind]}</h1><span>${P.monthly?eur(P.monthly)+' в месяц':''}</span></div>
+    <div class="title"><h1>${WNAME[kind]}</h1><span>${P.monthly?eur(P.monthly)+' в месяц':''}</span></div>
     ${stripHTML(p)}
-    ${P.monthly&&!paidNow?`<div class="on-page" style="margin-top:18px"><button class="btn" id="quick" style="width:100%">${icon('check')}Оплачено за ${MONF[cur%12]}: ${eur(P.monthly,2)}</button></div>`:''}
+    ${P.monthly&&!paidNow?`<div class="on-page" style="margin-top:18px"><button class="btn" id="quick" style="width:100%">${icon('check')}Отметить оплату — ${eur(P.monthly)}</button></div>`:''}
   </header>
   <div class="wrap">
     <section class="tp" aria-label="Итоги">${tp}</section>
@@ -481,7 +495,11 @@ function payView(kind){
 function meterBind(id){
   const M=S.meters[id], c=meterCalc(M);
   const dp=M.unit==='м³'?3:0;
-  $('v').oninput=()=>{fieldError('v','');delete $('f_read').dataset.confirm;};
+  $('v').oninput=()=>{fieldError('v','');delete $('f_read').dataset.confirm;
+    const last=c.r[c.r.length-1], v=parseNum($('v').value), h=$('vhint'); if(!h||!last) return;
+    if(v==null){h.textContent=`Прошлое показание — ${fmt(last[1],dp)} ${M.unit}, ${longDate(last[0])}.`;return;}
+    const days=Math.max(1,Math.round((pd($('d').value||today())-pd(last[0]))/DAY)), dlt=v-last[1];
+    h.textContent = dlt<0 ? `Это меньше прошлого показания (${fmt(last[1],dp)}).` : `+${fmt(dlt,dp)} ${M.unit} за ${days} ${DAYSG(days)} — ${fmt(dlt/days,dp?3:1)} в день${c.daily?`, обычно ${fmt(c.daily,dp?3:1)}`:''}.`;};
   $('f_read').onsubmit=e=>{e.preventDefault();const d=$('d').value,v=parseNum($('v').value);
     if(!d||v==null){fieldError('v','Введите число со счётчика.');return;}
     const before=c.r.filter(x=>pd(x[0])<pd(d)).pop(), after=c.r.find(x=>pd(x[0])>pd(d));
@@ -534,6 +552,7 @@ function summaryCalc(){
   const keys=[...m.keys()]; if(!keys.length) return {months:[]};
   const lo=Math.min(...keys), hi=Math.max(...keys,nowK()), months=[];
   for(let k=lo;k<=hi;k++){const o=m.get(k)||{key:k}; o.total=SERIES.reduce((s,[c])=>s+(o[c]||0),0); o.label=ymLabel(k); months.push(o);}
+  while(months.length>2 && months[0].total < 0.15*Math.max(...months.map(o=>o.total))) months.shift();   // drop a stub first month (e.g. 8 days of one meter)
   const full=months.filter(o=>o.key<nowK() && o.total>0);
   // each item is averaged over its own complete months: from its first to its last month with data,
   // skipping the current month and months a meter covers only partly
@@ -560,8 +579,8 @@ function summaryView(){
   const via=[]; for(const id in S.meters) if(S.meters[id].nk) via.push(S.meters[id].name.toLowerCase()); if(S.oil.nk) via.push('масло');
   const anim=!houseAnimated; houseAnimated=true;
   const floors=parts.map((k,i)=>`<a class="floor f-${k}" href="#${k}" style="height:${Math.max(52,Math.round(c.avg[k]/tot*H))}px;animation-delay:${(parts.length-1-i)*90}ms"><span class="n">${WNAME[k]}<small>${basis(k,c.span[k])}</small></span><span class="v">${eur(c.avg[k])}</span></a>`).join('');
-  const used=SERIES.filter(([k])=>c.months.some(o=>o[k]));
-  const rows=c.months.map(o=>`<tr><td>${o.label}${o.key===nowK()?' *':''}</td><td><b>${fmt(o.total)}</b></td>${used.map(([k])=>`<td>${o[k]?fmt(o[k]):'—'}</td>`).join('')}</tr>`).reverse();
+  const maxT=Math.max(...c.months.map(o=>o.total));
+  const rows=c.months.map(o=>`<tr><td>${o.label}${o.key===nowK()?' *':''}</td><td><b>${fmt(o.total)}</b></td><td style="width:45%"><div class="mix" role="img" aria-label="${esc(SERIES.filter(([k])=>o[k]).map(([k,l])=>l+' '+fmt(o[k])+' €').join(', '))}" style="width:${Math.max(8,o.total/maxT*100)}%">${SERIES.filter(([k])=>o[k]).map(([k,,v])=>`<i style="flex:${o[k]};background:var(${v})"></i>`).join('')}</div></td></tr>`).reverse();
   return `
   <header class="hero">
     <p class="house-lead">${c.full.length?'Столько стоит дом в обычный месяц':'Первый месяц ещё идёт'}</p>
@@ -577,7 +596,7 @@ function summaryView(){
   ${chartBlock('Расходы по месяцам, €','Столбцы расходов по месяцам с разбивкой по статьям')}
   <div class="wrap">
     <p class="note" style="margin-top:-12px">Свет, вода и масло — по расходу и цене. Аренда и Nebenkosten — по датам платежей.${via.length?` ${esc(via.join(', ')).replace(/^./,s=>s.toUpperCase())} ${via.length>1?'оплачиваются':'оплачивается'} через Nebenkosten и отдельно не считается.`:''}</p>
-    <section class="plate"><h2>По месяцам, €</h2>${table(['Месяц','Итого'].concat(used.map(s=>s[1])),rows,'')}<p class="note mute">Звёздочка — текущий месяц: в нём только то, что уже внесено.</p></section>
+    <section class="plate"><h2>По месяцам, €</h2>${table(['Месяц','Итого, €','Из чего'],rows,'')}<p class="note mute">Звёздочка — текущий месяц: в нём только то, что уже внесено. Цвета полосы — как этажи дома; точные суммы — в подсказке графика.</p></section>
     <p style="text-align:center;margin:28px 0 0"><button class="link" id="logout">Выйти</button></p>
   </div>`;
 }
@@ -603,8 +622,10 @@ function barChart(labels,series,line,stacked){
 }
 
 /* ---------- app shell ---------- */
+let statusTimer;
 function setStatus(t,kind,action){
-  const el=$('status'); el.className=kind||''; el.textContent=t||'';
+  const el=$('status'); clearTimeout(statusTimer); el.className=kind||''; el.textContent=t||'';
+  if(t && kind==='ok') statusTimer=setTimeout(()=>{ if(el.className==='ok') el.textContent=''; }, action?7000:3500);
   if(action){const b=document.createElement('button');b.type='button';b.className='link';b.textContent=action.label;b.onclick=()=>action.fn();el.append(' ',b);}
 }
 function fieldError(id,msg,kind){
@@ -665,7 +686,7 @@ async function push(msg, mutate, action){
   }catch(e){
     if(e.message==='401') return;
     keepPending();
-    setStatus('Нет связи — запись хранится на этом телефоне и ещё не сохранена на сервере.','err',{label:'Повторить',fn:retryPending});
+    setStatus('Нет связи. Запись сохранена на телефоне — отправлю, когда появится интернет.','wait',{label:'Отправить сейчас',fn:retryPending});
   }
 }
 function keepPending(){ try{localStorage.setItem('home_pending',JSON.stringify({rev:REV,data:S}));}catch(e){} }
@@ -676,12 +697,12 @@ async function load(keepStatus){
   try{
     const r = await api('GET');
     if (r.status===404){ REV=0; const p=getPending(); if(p&&p.rev===0){S=p.data;} render(); setStatus('На сервере пока пусто — показаны начальные данные. Первое сохранение запишет их.'); return; }
-    if (!r.ok) throw new Error('сервер ответил '+r.status);
+    if (!r.ok) throw new Error('server '+r.status);
     const j = await r.json(); S = j.data; REV = j.rev;
     const p=getPending();
     if(p && !keepStatus){ if(p.rev===REV){ S=p.data; render(); await push('Записи, внесённые без связи, отправлены.', null); return; } clearPending(); render(); setStatus('Записи, внесённые без связи, устарели: данные изменились на другом устройстве. Внесите их ещё раз.','err'); return; }
     render(); if(!keepStatus) setStatus('');
-  }catch(e){ if(e.message!=='401') setStatus('Не удалось загрузить данные: '+e.message+'.',true); }
+  }catch(e){ if(e.message!=='401') setStatus('Не удалось загрузить данные. Проверьте интернет и обновите страницу.',true); }
 }
 function showLogin(err){
   document.body.dataset.w='sum';
@@ -689,14 +710,14 @@ function showLogin(err){
   $('view').innerHTML=`<section class="plate login"><h2>Вход</h2>
     <form id="f_login" class="entry" style="grid-template-columns:1fr">
       ${field('pw','Пароль','type="password" autocomplete="current-password" required autofocus')}
-      <p class="cap ${err?'bad':''}" id="lerr" role="alert" style="margin:0">${err||'На этом устройстве вход сохранится на 90 дней.'}</p>
+      <p class="mute ${err?'bad':''}" id="lerr" role="alert" style="margin:0">${err||'На этом устройстве вход сохранится на 90 дней.'}</p>
       <button class="btn" id="lbtn">Войти</button>
     </form></section>`;
   $('f_login').onsubmit=async e=>{e.preventDefault();
     $('lbtn').disabled=true; $('lbtn').textContent='Проверяю…';
     try{
       const r=await fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});
-      if(r.ok) load(); else showLogin(r.status===401?'Пароль не подошёл. Попробуйте ещё раз.':'Сервер ответил '+r.status+'. Попробуйте позже.');
+      if(r.ok) load(); else showLogin(r.status===401?'Пароль не подошёл. Попробуйте ещё раз.':'Сервер сейчас не отвечает. Попробуйте через минуту.');
     }catch(err){ showLogin('Нет связи с сервером. Проверьте интернет.'); }
   };
 }
