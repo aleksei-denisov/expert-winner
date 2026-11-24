@@ -36,7 +36,7 @@ Status colours are never the only signal — always paired with text ("опла�
 | `--ring` | `#1E40AF` | `#FFFFFF` | focus outline |
 
 Chart series (fixed per category, same in every view; light / dark):
-rent `#6D28D9`/`#A78BFA` · nebenkosten `#0E7490`/`#22D3EE` · power `#1D4ED8`/`#60A5FA` · water `#0891B2`/`#67E8F9` · oil `#C2410C`/`#FB923C` · norm/average line = `--text-2`, dashed.
+rent `#6D28D9`/`#A78BFA` · nebenkosten `#BE185D`/`#F472B6` · power `#1D4ED8`/`#60A5FA` · water `#0891B2`/`#67E8F9` · oil `#C2410C`/`#FB923C` · norm/average line = `--text-2`, dashed.
 
 ## 4. Typography
 Pairing **"Dashboard Data"**: **Fira Sans** (UI + figures) with **Fira Code** for meter readings only.
@@ -64,14 +64,18 @@ All numbers: `font-variant-numeric: tabular-nums lining-nums;` right-aligned in 
 - **Entry card** — visible labels above fields (no placeholder-only labels), date + value + primary button; on mobile button full-width.
 - **KPI tile** — label (caption) → value (KPI) → sub-line (caption). Optional progress bar 8 px, value in text too.
 - **Data table** — 16 px cells, 12 px vertical padding, right-aligned tabular numbers, units in header, sticky first column only if it scrolls.
+- **Odometer hero** (meter pages) — dark drums with a centre seam (gradient + inset highlight). Deliberate exception to "no gradients": it depicts the physical counter. Water decimals on red drums. Unit sits outside the drum box.
+- **Number inputs** — `type=text inputmode=decimal`, parsed with comma or dot (Russian keyboard gives a comma). Errors inline under the field (`aria-invalid`, `aria-describedby`), never only in the status line.
+- **Status line** — sticky together with the tab bar; success green, error red, may carry one action (Отменить / Повторить).
+- **Offline** — a failed save is kept on the device and retried on reconnect; the status says it is not yet on the server.
 - **Delete** — icon button with `aria-label`, 44×44 hit area, two-step confirm ("Удалить?").
-- **Status line** — `role="status"` live region under the tabs.
 - **Details/settings** — collapsible card at the bottom of each page.
 
 ## 7. Charts (Chart.js)
 - Monthly values → vertical bars; summary → stacked bars + dashed average line.
 - Gridlines `--border`, ticks 13 px `--text-2`, no chart borders. Rounded bar tops 4 px.
-- Forecast month: same colour at 45 % opacity **and** "*" in label.
+- Forecast / current month: same colour at 35 % opacity with a solid outline **and** "*" in the label.
+- X labels: month only, year on the first bar and on January; no rotation.
 - Every chart is followed by a table with the same numbers (a11y fallback).
 
 ## 8. Motion (2 — subtle)
