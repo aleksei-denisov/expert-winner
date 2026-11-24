@@ -20,12 +20,18 @@ green is rent, graphite is Nebenkosten.
 ## Colour
 | Token | Value | On-colour | Use |
 |---|---|---|---|
-| `--concrete` | `#E3E5E6` | `#000` | Дом page, login |
-| `--power` | `#FFCC00` | `#000` | Свет (contrast 13.9:1) |
-| `--water` | `#0047AB` | `#FFF` | Вода (8.6:1) |
-| `--oil` | `#B23A0A` | `#FFF` | Масло (5.9:1) |
-| `--rent` | `#0B6E4F` | `#FFF` | Аренда (6.3:1) |
-| `--nk` | `#3D4A5C` | `#FFF` | Nebenkosten (9.0:1) |
+| `--concrete` | `#DCDEDF` | `#000` | Дом hero, login |
+| `--power` | `#E8C547` | `#000` | Свет (12.5:1) |
+| `--water` | `#2C5A8C` | `#FFF` | Вода (7.1:1) |
+| `--oil` | `#9C4422` | `#FFF` | Масло (6.4:1) |
+| `--rent` | `#2E6A54` | `#FFF` | Аренда (6.35:1) |
+| `--nk` | `#46505E` | `#FFF` | Nebenkosten (8.2:1) |
+
+v2.1 «quieter»: the section colour lives only in the hero band (top of the screen), on the house floors
+and the nav swatch. Below the hero the page is a pale tint of that colour (`#F6F0DA`, `#E6ECF2`,
+`#F3E9E4`, `#E5EEEA`, `#E8E9EC`, Дом `#EEEFF0`) with black text; chart bars use the section colour
+(power uses `#7A6200`). Dark mode: hero is a deep shade (`#3B3212`, `#16293F`, `#3A1F14`, `#16302A`, `#23282F`),
+page `#0E0F10`. Weights reduced: figures Unbounded 500, type-plate rules 1 px. Spacing scale 4/8/12/16/24/32/48.
 | `--plate` | `#FFF` | `#000` | inputs, tables, settings |
 | `--bad` | `#C1121F` | — | errors, over norm (always with text) |
 

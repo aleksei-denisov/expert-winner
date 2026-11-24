@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" translate="no">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#E3E5E6">
+<meta name="theme-color" content="#DCDEDF">
 <title>Дом: счётчики и расходы</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +37,19 @@ body[data-w="nk"]{--c:var(--nk);--on:#fff;--tint:#E8E9EC;--dbar:var(--nk)}
   body{--s-water:#6F9BD0;--s-oil:#D9825C;--s-rent:#6FB59A;--s-nk:#A3AEBD}
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation;-webkit-tap-highlight-color:transparent;scroll-padding-bottom:190px}
+.skip{position:absolute;left:12px;top:-60px;z-index:20;background:#000;color:#fff;padding:12px 16px;border-radius:8px;font-weight:600;text-decoration:none}
+.skip:focus{top:calc(12px + env(safe-area-inset-top))}
+main:focus{outline:none}
+@media (hover:hover){
+  .btn:hover{filter:brightness(1.18)}
+  .nav a:not([aria-current]):hover{background:#2A2C2E}
+  .floor:hover{filter:brightness(1.1)}
+  .link:hover,.switch a:hover{text-decoration-thickness:2px}
+  .icon-btn:hover{background:var(--plate-line)}
+  .switch a:not([aria-current]):hover{background:color-mix(in srgb,var(--on) 12%,transparent)}
+}
+.nav a:active,.floor:active,.icon-btn:active{filter:brightness(.92)}
 body{--page:var(--tint);--ink:var(--page-ink,#000);--bar:var(--dbar);overflow-x:clip;margin:0;background:var(--page);color:var(--ink);font:400 16px/1.5 var(--text);font-variant-numeric:tabular-nums;transition:background-color .25s}
 main{max-width:640px;margin:0 auto;padding:0 0 calc(168px + env(safe-area-inset-bottom))}
 @media (min-width:700px){main{margin-top:var(--space-5)}.hero{border-radius:10px}}
@@ -130,7 +142,7 @@ details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
 .set .full{grid-column:1/-1}
 
 /* the house */
-.house-lead{font:600 26px/1.2 var(--display);letter-spacing:-.01em;margin:0 0 var(--space-5);text-wrap:balance}
+.house-lead{font:600 26px/1.2 var(--display);margin-top:0;letter-spacing:-.01em;margin:0 0 var(--space-5);text-wrap:balance}
 .house{position:relative;width:min(100%,360px);margin:0 auto}
 .roof{position:relative;height:118px;margin:0 -12px}
 .roof::before{content:"";position:absolute;inset:0;background:#26282A;clip-path:polygon(50% 0,100% 100%,0 100%)}
@@ -201,7 +213,8 @@ details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
 </style>
 </head>
 <body data-w="sum">
-<main id="view"></main>
+<a class="skip" href="#view" onclick="event.preventDefault();document.getElementById('view').focus()">К содержимому</a>
+<main id="view" tabindex="-1"></main>
 <div id="status" role="status" aria-live="polite"></div>
 <nav class="nav" aria-label="Разделы"><div id="tabs"></div></nav>
 <span id="hdr" hidden></span>
@@ -220,7 +233,9 @@ const pd = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y,m-
 const today = () => { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); };
 const fmt = (n,d=0) => (isFinite(n)?n:0).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
 const eur = (n,d=0) => fmt(n,d)+' €';
-const fd = s => { const [y,m,d]=s.split('-'); return `${d}.${m}.${y.slice(2)}`; };
+const DF_SHORT = new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit',timeZone:'UTC'});
+const DF_LONG = new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',timeZone:'UTC'});
+const fd = s => DF_SHORT.format(pd(s));
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ym = t => { const d=new Date(t); return d.getUTCFullYear()*12+d.getUTCMonth(); };
 const ymLabel = k => MON[k%12]+' '+String(Math.floor(k/12)).slice(2);
@@ -312,10 +327,10 @@ Object.assign(IC,{
 });
 const WNAME={power:'Свет',water:'Вода',oil:'Масло',rent:'Аренда',nk:'Nebenkosten'};
 const DAYSG=n=>plural(n,'день','дня','дней');
-const longDate=s=>{const [y,m,d]=s.split('-').map(Number);return `${d} ${['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'][m-1]}`;};
+const longDate=s=>DF_LONG.format(pd(s));
 
 /* ---------- shared pieces ---------- */
-const field = (id,label,attrs='',cls='') => `<div class="field ${cls}"><label for="${id}">${label}</label><input id="${id}" ${attrs}></div>`;
+const field = (id,label,attrs='',cls='') => `<div class="field ${cls}"><label for="${id}">${label}</label><input id="${id}" name="${id}" ${attrs}></div>`;
 const delBtn = (key,what) => `<button type="button" class="icon-btn" data-del="${esc(key)}" aria-label="Удалить ${esc(what)}">${icon('x')}</button>`;
 const table = (head,rows,emptyText) => rows.length
   ? `<div class="tbl"><table><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`
@@ -481,7 +496,7 @@ function payView(kind){
       <form class="entry" id="f_pay">
         ${field('d','Дата',`type="date" value="${today()}" required`)}
         ${field('eur','Сумма, €',`type="text" inputmode="decimal" autocomplete="off" required value="${paidNow?'':P.monthly||''}"`)}
-        ${field('note','Комментарий',`placeholder="${isRent?'например, за декабрь':'например, Nachzahlung 2025'}"`,'full')}
+        ${field('note','Комментарий',`placeholder="${isRent?'например, за декабрь…':'например, Nachzahlung 2025…'}"`,'full')}
         <button class="btn full">Добавить платёж</button>
       </form></section>
     <section class="plate"><h2>Платежи</h2>${table(['Дата','Комментарий','€','<span class="sr">Удалить</span>'],rows,'Платежей пока нет.')}</section>
@@ -583,7 +598,7 @@ function summaryView(){
   const rows=c.months.map(o=>`<tr><td>${o.label}${o.key===nowK()?' *':''}</td><td><b>${fmt(o.total)}</b></td><td style="width:45%"><div class="mix" role="img" aria-label="${esc(SERIES.filter(([k])=>o[k]).map(([k,l])=>l+' '+fmt(o[k])+' €').join(', '))}" style="width:${Math.max(8,o.total/maxT*100)}%">${SERIES.filter(([k])=>o[k]).map(([k,,v])=>`<i style="flex:${o[k]};background:var(${v})"></i>`).join('')}</div></td></tr>`).reverse();
   return `
   <header class="hero">
-    <p class="house-lead">${c.full.length?'Столько стоит дом в обычный месяц':'Первый месяц ещё идёт'}</p>
+    <h1 class="house-lead">${c.full.length?'Столько стоит дом в обычный месяц':'Первый месяц ещё идёт'}</h1>
     ${parts.length?`<div class="house ${anim?'animate':''}" role="group" aria-label="Из чего складывается обычный месяц">
       <div class="chimney" aria-hidden="true"></div>
       <div class="roof" aria-hidden="true"><b>${eur(c.avg.total)}</b></div>
@@ -639,7 +654,7 @@ function parseNum(v){ v=String(v||'').trim().replace(/\s/g,'').replace(',','.');
 function numOr(id,fallback){ const n=parseNum($(id).value); return n==null?fallback:n; }
 function delBind(fn,msg){
   $('view').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
-    if(b.dataset.sure){commit(msg,fn(b.dataset.del));}
+    if(b.dataset.sure){const snap=JSON.stringify(S);commit(msg,fn(b.dataset.del),null,{label:'Отменить',fn:()=>commit('Удаление отменено.',()=>{S=JSON.parse(snap);norm();})});}
     else {b.dataset.sure=1;b.classList.add('confirm');b.textContent='Удалить?';setTimeout(()=>{if(b.isConnected&&b.dataset.sure){delete b.dataset.sure;b.classList.remove('confirm');b.innerHTML=icon('x');}},4000);}
   });
 }
@@ -666,11 +681,21 @@ async function api(method, body){
   if (r.status===401) { showLogin(); throw new Error('401'); }
   return r;
 }
-let lastFocus=null;
+let lastFocus=null, busy=false;
 async function commit(msg, mutate, focusId, action){
-  mutate(); lastFocus=focusId||null; render();
-  await push(msg, mutate, action);
+  if(busy) return; busy=true;
+  try{
+    mutate(); lastFocus=focusId||null; render();
+    document.querySelectorAll('#view form button').forEach(b=>b.disabled=true);
+    await push(msg, mutate, action);
+  } finally {
+    busy=false; document.querySelectorAll('#view form button').forEach(b=>b.disabled=false);
+  }
 }
+window.addEventListener('beforeunload',e=>{
+  const dirty=[...document.querySelectorAll('#view form.entry input')].some(i=>i.type!=='date'&&i.type!=='password'&&i.value!==i.defaultValue);
+  if(dirty){e.preventDefault();e.returnValue='';}
+});
 async function push(msg, mutate, action){
   setStatus('Сохраняю…');
   try{
@@ -709,7 +734,7 @@ function showLogin(err){
   $('tabs').innerHTML=''; $('hdr').innerHTML=''; setStatus('');
   $('view').innerHTML=`<section class="plate login"><h2>Вход</h2>
     <form id="f_login" class="entry" style="grid-template-columns:1fr">
-      ${field('pw','Пароль','type="password" autocomplete="current-password" required autofocus')}
+      ${field('pw','Пароль','type="password" autocomplete="current-password" required')}
       <p class="mute ${err?'bad':''}" id="lerr" role="alert" style="margin:0">${err||'На этом устройстве вход сохранится на 90 дней.'}</p>
       <button class="btn" id="lbtn">Войти</button>
     </form></section>`;
