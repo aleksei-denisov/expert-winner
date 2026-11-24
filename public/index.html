@@ -456,6 +456,19 @@ function oilView(){
 }
 
 /* ---------- Платежи: Аренда / Nebenkosten ---------- */
+// A standing order ("since" YYYY-MM + monthly) counts as paid on the 1st of every month up to now,
+// unless a manual payment already exists for that month.
+function allPayments(kind){
+  const P=S[kind], out=[...P.payments];
+  if(P.since && P.monthly){
+    const [y,m]=P.since.split('-').map(Number);
+    for(let k=y*12+m-1;k<=nowK();k++){
+      if(P.payments.some(x=>ym(pd(x.d))===k)) continue;
+      out.push({d:`${Math.floor(k/12)}-${String(k%12+1).padStart(2,'0')}-01`,eur:P.monthly,note:'автоматически',auto:true});
+    }
+  }
+  return out;
+}
 function stripHTML(payments){
   const cur=nowK(), cells=[], first=payments.length?Math.min(...payments.map(x=>ym(pd(x.d)))):cur;
   for(let k=cur-5;k<=cur;k++){
@@ -465,7 +478,7 @@ function stripHTML(payments){
   return `<ul class="strip">${cells.join('')}</ul>`;
 }
 function payView(kind){
-  const P=S[kind], isRent=kind==='rent', p=[...P.payments].sort((a,b)=>pd(a.d)-pd(b.d));
+  const P=S[kind], isRent=kind==='rent', p=allPayments(kind).sort((a,b)=>pd(a.d)-pd(b.d));
   const y=today().slice(0,4), inY=p.filter(x=>x.d.startsWith(y)), paidY=inY.reduce((s,x)=>s+x.eur,0);
   const cur=nowK(), paidNow=p.some(x=>ym(pd(x.d))===cur);
   const byYear={}; p.forEach(x=>{const k=x.d.slice(0,4);byYear[k]=(byYear[k]||0)+x.eur;});
@@ -480,7 +493,7 @@ function payView(kind){
     if(items.length){ tp+=tpRow('Из них по счётчикам', eur(tracked), esc(items.join(', '))); tp+=tpRow('Остальное', eur(Math.max(0,paidY-tracked)), 'мусор, налог, уборка и прочее'); }
     extra=`<p class="note">В Nebenkosten входит и то, что вы не меряете, поэтому «по счётчикам» почти всегда меньше. Сравнивайте с прошлогодней Abrechnung.</p>`;
   }
-  const rows=p.map(x=>`<tr><td>${fd(x.d)}</td><td class="t">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td>${delBtn(P.payments.indexOf(x),'платёж от '+fd(x.d))}</td></tr>`).reverse();
+  const rows=p.map(x=>`<tr><td>${fd(x.d)}</td><td class="t">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td>${x.auto?'':delBtn(P.payments.indexOf(x),'платёж от '+fd(x.d))}</td></tr>`).reverse();
   const yrows=Object.keys(byYear).sort().reverse().map(k=>`<tr><td>${k}</td><td>${fmt(byYear[k],2)}</td></tr>`);
   return `
   <header class="hero">
@@ -501,8 +514,10 @@ function payView(kind){
       </form></section>
     <section class="plate"><h2>Платежи</h2>${table(['Дата','Комментарий','€','<span class="sr">Удалить</span>'],rows,'Платежей пока нет.')}</section>
     ${yrows.length>1?`<section class="plate"><h2>По годам</h2>${table(['Год','Оплачено, €'],yrows,'')}</section>`:''}
-    <section class="plate"><details><summary>Сумма в месяц</summary><div class="set">
-      ${field('m_m',isRent?'Аренда (Kaltmiete), € в месяц':'Предоплата Nebenkosten, € в месяц',`type="text" inputmode="decimal" autocomplete="off" value="${P.monthly}"`,'full')}
+    <section class="plate"><details ${P.monthly?'':'open'}><summary>Ежемесячный платёж</summary><div class="set">
+      ${field('m_m',isRent?'Аренда, € в месяц':'Предоплата Nebenkosten, € в месяц',`type="text" inputmode="decimal" autocomplete="off" value="${P.monthly}"`,'full')}
+      ${field('m_since','Плачу каждый месяц, начиная с',`type="month" value="${P.since||''}"`,'full')}
+      <p class="mute full" style="margin:0">Если указать месяц, каждый месяц с него считается оплаченным автоматически — вносить платежи вручную не нужно. Оставьте пустым, чтобы отмечать оплату самому.</p>
     </div><button class="btn" id="m_save">Сохранить</button></details></section>
   </div>`;
 }
@@ -554,7 +569,7 @@ function payBind(kind){
   if($('quick')) $('quick').onclick=()=>{const x={d:today(),eur:P.monthly,note:(isRent?'Miete ':'Vorauszahlung ')+ymLabel(nowK())};
     commit('Оплата отмечена.',()=>{S[kind].payments.push(x);},null,{label:'Отменить',fn:()=>commit('Отметка оплаты отменена.',()=>{const a=S[kind].payments;const k=a.findIndex(y=>y.d===x.d&&y.note===x.note&&y.eur===x.eur);if(k>=0)a.splice(k,1);})});};
   delBind(i=>{const x=P.payments[+i];return ()=>{const a=S[kind].payments;const k=a.findIndex(y=>y.d===x.d&&y.eur===x.eur&&y.note===x.note);if(k>=0)a.splice(k,1);};},'Платёж удалён.');
-  $('m_save').onclick=()=>{const v=numOr('m_m',P.monthly);commit('Сумма сохранена.',()=>{S[kind].monthly=v;});};
+  $('m_save').onclick=()=>{const v=numOr('m_m',P.monthly), since=$('m_since').value||'';commit('Сохранено.',()=>{S[kind].monthly=v;S[kind].since=since;});};
 }
 /* ---------- summary ---------- */
 const SERIES=[['rent','Аренда','--s-rent'],['nk','Nebenkosten','--s-nk'],['power','Свет','--s-power'],['water','Вода','--s-water'],['oil','Масло','--s-oil']];
@@ -562,8 +577,8 @@ function summaryCalc(){
   const m=new Map(), part={}, add=(k,cat,v,partial)=>{if(!v)return;if(!m.has(k))m.set(k,{key:k});const o=m.get(k);o[cat]=(o[cat]||0)+v;if(partial)(part[cat]=part[cat]||new Set()).add(k);};
   for(const id of ['power','water']){const M=S.meters[id]; if(!M||M.nk) continue; meterCalc(M).months.forEach(o=>add(o.key,id,o.cost,o.partial));}
   if(!S.oil.nk){const c=oilCalc(); if(c.ppl) c.months.forEach(o=>add(o.key,'oil',o.qty*c.ppl,o.partial));}
-  S.rent.payments.forEach(x=>add(ym(pd(x.d)),'rent',x.eur));
-  S.nk.payments.forEach(x=>add(ym(pd(x.d)),'nk',x.eur));
+  allPayments('rent').forEach(x=>add(ym(pd(x.d)),'rent',x.eur));
+  allPayments('nk').forEach(x=>add(ym(pd(x.d)),'nk',x.eur));
   const keys=[...m.keys()]; if(!keys.length) return {months:[]};
   const lo=Math.min(...keys), hi=Math.max(...keys,nowK()), months=[];
   for(let k=lo;k<=hi;k++){const o=m.get(k)||{key:k}; o.total=SERIES.reduce((s,[c])=>s+(o[c]||0),0); o.label=ymLabel(k); months.push(o);}
@@ -593,7 +608,8 @@ function summaryView(){
   const H=300, tot=c.avg.total||1;
   const via=[]; for(const id in S.meters) if(S.meters[id].nk) via.push(S.meters[id].name.toLowerCase()); if(S.oil.nk) via.push('масло');
   const anim=!houseAnimated; houseAnimated=true;
-  const floors=parts.map((k,i)=>`<a class="floor f-${k}" href="#${k}" style="height:${Math.max(52,Math.round(c.avg[k]/tot*H))}px;animation-delay:${(parts.length-1-i)*90}ms"><span class="n">${WNAME[k]}<small>${basis(k,c.span[k])}</small></span><span class="v">${eur(c.avg[k])}</span></a>`).join('');
+  const wm=S.meters.water, wc=wm&&wm.nk?meterCalc(wm).months.filter(o=>!o.partial&&o.key<nowK()):[], waterInNk=wc.length?wc.reduce((t,o)=>t+o.cost,0)/wc.length:0;
+  const floors=parts.map((k,i)=>`<a class="floor f-${k}" href="#${k}" style="height:${Math.max(52,Math.round(c.avg[k]/tot*H))}px;animation-delay:${(parts.length-1-i)*90}ms"><span class="n">${WNAME[k]}<small>${k==='nk'&&waterInNk?`из них вода ≈ ${eur(waterInNk)}`:basis(k,c.span[k])}</small></span><span class="v">${eur(c.avg[k])}</span></a>`).join('');
   const maxT=Math.max(...c.months.map(o=>o.total));
   const rows=c.months.map(o=>`<tr><td>${o.label}${o.key===nowK()?' *':''}</td><td><b>${fmt(o.total)}</b></td><td style="width:45%"><div class="mix" role="img" aria-label="${esc(SERIES.filter(([k])=>o[k]).map(([k,l])=>l+' '+fmt(o[k])+' €').join(', '))}" style="width:${Math.max(8,o.total/maxT*100)}%">${SERIES.filter(([k])=>o[k]).map(([k,,v])=>`<i style="flex:${o[k]};background:var(${v})"></i>`).join('')}</div></td></tr>`).reverse();
   return `
