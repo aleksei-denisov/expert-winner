@@ -2,62 +2,198 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F4F6FA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)">
 <title>Дом: счётчики и расходы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600&family=Fira+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#6b7280;--ac:#1d5fd1;--ok:#14804a;--warn:#c2410c;--bd:#e5e7eb}
-@media(prefers-color-scheme:dark){:root{--bg:#111418;--card:#1a1e24;--tx:#e8eaed;--mut:#9aa1ab;--ac:#6ea0ff;--ok:#4ade80;--warn:#fb923c;--bd:#2b313a}}
-*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--tx)}
-main{max-width:720px;margin:auto;padding:12px 16px 40px}
-h1{font-size:20px;margin:4px 0 10px}h2{font-size:16px;margin:0 0 10px}
-.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:2}
-.tabs button{background:var(--card);color:var(--tx);border:1px solid var(--bd);white-space:nowrap}
-.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.kpi{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
-.kpi b{display:block;font-size:20px}.kpi span{color:var(--mut);font-size:13px}
-.ok{color:var(--ok)}.warn{color:var(--warn)}.mut{color:var(--mut);font-size:12px}
-form{display:flex;gap:8px;flex-wrap:wrap}
-input,select{font:inherit;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);min-width:0;flex:1}
-button{font:inherit;padding:9px 14px;border:0;border-radius:10px;background:var(--ac);color:#fff;cursor:pointer}
-button.ghost{background:none;color:var(--mut);padding:4px 8px}
-table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:7px 4px;border-bottom:1px solid var(--bd);text-align:right}td:first-child,th:first-child{text-align:left}
-th{color:var(--mut);font-weight:500}
-.set{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.set label{font-size:13px;color:var(--mut)}.set input,.set select{width:100%}
-.bar{height:10px;background:var(--bd);border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--ac)}
-details summary{cursor:pointer;font-weight:600}
-#status{font-size:12px;color:var(--mut);min-height:16px;margin-bottom:6px}
+/* ---- tokens: design-system/home-meters/MASTER.md ---- */
+:root{
+  --bg:#F4F6FA;--surface:#FFFFFF;--surface-2:#EEF2F7;--text:#0F172A;--text-2:#475569;--border:#E2E8F0;--field:#CBD5E1;
+  --primary:#1E40AF;--on-primary:#FFFFFF;--good:#047857;--bad:#B91C1C;--warn:#B45309;--ring:#1E40AF;
+  --drum:#111827;--drum-text:#F9FAFB;--drum-red:#B91C1C;
+  --s-rent:#6D28D9;--s-nk:#0E7490;--s-power:#1D4ED8;--s-water:#0891B2;--s-oil:#C2410C;
+  --font:'Fira Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'Fira Code',ui-monospace,monospace;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0F172A;--surface:#192134;--surface-2:#101A34;--text:#F1F5F9;--text-2:#94A3B8;--border:rgba(255,255,255,.08);--field:rgba(255,255,255,.22);
+  --primary:#60A5FA;--on-primary:#0F172A;--good:#34D399;--bad:#F87171;--warn:#FBBF24;--ring:#FFFFFF;
+  --drum:#05080F;--drum-text:#F9FAFB;--drum-red:#991B1B;
+  --s-rent:#A78BFA;--s-nk:#22D3EE;--s-power:#60A5FA;--s-water:#67E8F9;--s-oil:#FB923C;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 16px/1.5 var(--font);font-variant-numeric:tabular-nums lining-nums}
+.num{font-variant-numeric:tabular-nums lining-nums}
+main{max-width:760px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+svg.i{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+/* header + tabs */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 8px}
+.top h1{font-size:22px;line-height:28px;font-weight:700;margin:0;letter-spacing:-.01em}
+.tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:8px 16px;background:var(--bg)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:500 15px/1 var(--font);white-space:nowrap;cursor:pointer;transition:background-color .15s,color .15s}
+.tab[aria-current="page"]{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+#status{min-height:20px;margin:4px 0 8px;font-size:14px;line-height:20px;color:var(--text-2)}
+#status.err{color:var(--bad)}
+
+/* blocks */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+h2{font-size:17px;line-height:24px;font-weight:600;margin:0 0 12px}
+.cap{font-size:14px;line-height:20px;color:var(--text-2);font-weight:500}
+.note{font-size:14px;line-height:20px;color:var(--text-2);margin:12px 0 0}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+
+/* hero: mechanical counter */
+.hero{display:flex;flex-direction:column;gap:12px}
+.odo-row{display:flex;align-items:flex-end;gap:10px}
+.odo{display:inline-flex;gap:3px;padding:6px;background:#0B0F19;border-radius:10px;flex:none}
+.odo span{display:grid;place-items:center;width:clamp(28px,8.2vw,40px);height:clamp(42px,12vw,56px);background:linear-gradient(var(--drum) 0 46%,#000 46% 54%,var(--drum) 54%);border-radius:4px;color:var(--drum-text);font:600 clamp(22px,6.8vw,32px)/1 var(--mono);box-shadow:inset 0 2px 0 rgba(255,255,255,.08),inset 0 -2px 0 rgba(0,0,0,.4)}
+.odo span.red{background:linear-gradient(var(--drum-red) 0 46%,#5b0d0d 46% 54%,var(--drum-red) 54%)}
+.odo-u{font:600 17px/1 var(--font);color:var(--text-2);padding-bottom:8px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:4px 16px}
+.hero-meta b{font-weight:600}
+
+/* forms */
+form.entry{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+form.entry .full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:14px;line-height:20px;font-weight:500;color:var(--text-2)}
+input,select{font:400 16px/24px var(--font);font-variant-numeric:tabular-nums;width:100%;min-height:48px;padding:11px 12px;border:1px solid var(--field);border-radius:10px;background:var(--surface);color:var(--text)}
+input::placeholder{color:var(--text-2);opacity:.8}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border:0;border-radius:10px;background:var(--primary);color:var(--on-primary);font:600 16px/1 var(--font);cursor:pointer;transition:opacity .15s}
+.btn:active{opacity:.85}
+.btn.secondary{background:var(--surface-2);color:var(--text)}
+.btn[disabled]{opacity:.55;cursor:default}
+.icon-btn{display:inline-grid;place-items:center;width:44px;height:44px;margin:-10px -8px -10px 0;border:0;background:none;color:var(--text-2);border-radius:10px;cursor:pointer}
+.icon-btn.confirm{width:auto;padding:0 10px;color:var(--bad);font:600 14px/1 var(--font)}
+.link{background:none;border:0;padding:0;color:var(--primary);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;min-height:44px}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+input:focus-visible{outline-offset:0}
+.check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px}
+.check input{width:22px;height:22px;min-height:0;accent-color:var(--primary)}
+
+/* figures: one card, hairline cells */
+.figs{display:grid;grid-template-columns:1fr 1fr;padding:0;overflow:hidden}
+.fig{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px;min-width:0}
+.fig:nth-child(odd){border-right:1px solid var(--border)}
+.fig:nth-last-child(-n+2):nth-child(odd),.fig:last-child{border-bottom:0}
+.fig .v{font-size:28px;line-height:32px;font-weight:600;letter-spacing:-.01em;margin:2px 0}
+.fig .v small{font-size:16px;font-weight:500}
+.fig .v.word{font-size:22px;line-height:28px}
+.meter{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;background:var(--primary);border-radius:4px}
+@media (min-width:720px){.figs{grid-template-columns:repeat(4,1fr)}.fig{border-bottom:0;border-right:1px solid var(--border)}.fig:last-child{border-right:0}}
+
+/* tables */
+.tbl{overflow-x:auto;margin:0 -16px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px 16px 12px 0;text-align:right;font-size:16px;line-height:22px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:16px}
+th{font-size:14px;line-height:20px;font-weight:500;color:var(--text-2);border-bottom:1px solid var(--border)}
+td{border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:0}
+td.t{text-align:left;white-space:normal;color:var(--text-2);font-size:15px}
+tr.total td{font-weight:600}
+.empty{color:var(--text-2);font-size:15px;padding:4px 0}
+
+/* oil tank */
+.tank-wrap{display:flex;gap:16px;align-items:stretch}
+.tank{width:64px;min-height:132px;border:2px solid var(--text-2);border-radius:12px;position:relative;overflow:hidden;flex:none}
+.tank i{position:absolute;left:0;right:0;bottom:0;background:var(--s-oil);opacity:.9}
+.tank b{position:absolute;inset:0;display:grid;place-items:center;font-weight:600;font-size:15px;color:var(--text);text-shadow:0 0 6px var(--surface)}
+
+/* payment strip */
+.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.mo{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border-radius:10px;border:1px solid var(--border);font-size:14px;font-weight:500;color:var(--text-2)}
+.mo .ic{display:grid;place-items:center;width:28px;height:28px;border-radius:999px;border:1.5px dashed var(--field)}
+.mo.paid{color:var(--text)}
+.mo.paid .ic{background:var(--good);border:0;color:var(--surface)}
+.mo.paid .ic svg{stroke:var(--surface);width:18px;height:18px}
+.mo.now{border-color:var(--primary);border-width:2px}
+
+/* summary composition */
+.lead{font-size:22px;line-height:30px;font-weight:600;margin:0 0 14px}
+.lead .num{font-size:30px}
+.comp{display:flex;height:20px;border-radius:6px;overflow:hidden;gap:2px;background:var(--surface-2)}
+.comp i{display:block;height:100%}
+.legend{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.legend li{display:flex;align-items:center;gap:10px;font-size:16px}
+.legend li span:nth-child(2){flex:1}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+
+details>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:44px;cursor:pointer;font-weight:600;font-size:17px}
+details>summary::-webkit-details-marker{display:none}
+details>summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--text-2);border-bottom:2px solid var(--text-2);transform:rotate(45deg);margin:0 6px 4px}
+details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+.set{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 16px}
+.set .full{grid-column:1/-1}
+.login{max-width:380px;margin:12vh auto 0}
+@media (max-width:380px){form.entry,.set{grid-template-columns:1fr}.fig .v{font-size:24px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <main>
-<h1 style="display:flex;justify-content:space-between;align-items:center">🏠 Дом: счётчики и расходы <button class="ghost" onclick="logout()" style="font-size:13px">Выйти</button></h1>
-<div class="tabs" id="tabs"></div>
-<div id="status"></div>
+<div class="top"><h1>Дом: счётчики и расходы</h1><span id="hdr"></span></div>
+<nav class="tabs" id="tabs" aria-label="Разделы"></nav>
+<div id="status" role="status" aria-live="polite"></div>
 <div id="view"></div>
 </main>
 
-<script id="state" type="application/json">{"v":2,"meters":{"power":{"name":"Электричество","icon":"⚡","unit":"кВт·ч","price":28.11,"priceUnit":"ct","base":190.11,"norm":3500,"abs":98,"nk":false,"readings":[["2026-06-23",3845],["2026-10-10",4849],["2026-10-31",5052],["2026-11-23",5229]]},"water":{"name":"Вода (холодная)","icon":"💧","unit":"м³","price":4.5,"priceUnit":"eur","base":0,"norm":0,"abs":0,"nk":true,"readings":[]}},"oil":{"tankL":3000,"heightCm":150,"nk":false,"entries":[]},"nk":{"monthly":0,"payments":[]}}</script>
+<script id="state" type="application/json">{"v":2,"meters":{"power":{"name":"Электричество","unit":"кВт·ч","price":28.11,"priceUnit":"ct","base":190.11,"norm":3500,"abs":98,"nk":false,"readings":[["2026-06-23",3845],["2026-10-10",4849],["2026-10-31",5052],["2026-11-23",5229]]},"water":{"name":"Вода (холодная)","unit":"м³","price":4.5,"priceUnit":"eur","base":0,"norm":0,"abs":0,"nk":true,"readings":[]}},"oil":{"tankL":3000,"heightCm":150,"nk":false,"entries":[]},"nk":{"monthly":0,"payments":[]},"rent":{"monthly":0,"payments":[]}}</script>
 
 <script>
 let S = JSON.parse(document.getElementById('state').textContent);
-let tab = 'power', chart, REV = 0;
-try { location.hash && (tab = location.hash.slice(1)); } catch(e){}
+let tab = 'sum', chart, REV = 0;
+try { if (location.hash) tab = location.hash.slice(1); } catch(e){}
 const $ = id => document.getElementById(id);
-const DAY = 864e5, MON = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+const DAY = 864e5;
+const MON = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+const MONF = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
 const pd = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y,m-1,d); };
-const today = () => new Date().toISOString().slice(0,10);
+const today = () => { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); };
 const fmt = (n,d=0) => (isFinite(n)?n:0).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
+const eur = (n,d=0) => fmt(n,d)+' €';
 const fd = s => { const [y,m,d]=s.split('-'); return `${d}.${m}.${y.slice(2)}`; };
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ym = t => { const d=new Date(t); return d.getUTCFullYear()*12+d.getUTCMonth(); };
 const ymLabel = k => MON[k%12]+' '+String(Math.floor(k/12)).slice(2);
 const dim = k => new Date(Date.UTC(Math.floor(k/12),k%12+1,0)).getUTCDate();
+const nowK = () => ym(pd(today()));
+const plural = (n,a,b,c) => { n=Math.abs(Math.round(n))%100; const m=n%10; return n>10&&n<20?c:m===1?a:m>=2&&m<=4?b:c; };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-/* ---------- daily-rate segments -> months ---------- */
-// segs: [{t0,t1,rate}] ; returns months with qty, days, forecast flag
+/* Lucide icons */
+const IC = {
+  sum:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  power:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  water:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  oil:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  rent:'<path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>',
+  nk:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  out:'<path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>'
+};
+const icon = (k,label) => `<svg class="i" viewBox="0 0 24 24" ${label?`role="img" aria-label="${label}"`:'aria-hidden="true"'}>${IC[k]}</svg>`;
+
+function norm(){
+  S.meters = S.meters || {};
+  S.meters.power = S.meters.power || {name:'Электричество',unit:'кВт·ч',price:0,priceUnit:'ct',base:0,norm:0,abs:0,nk:false,readings:[]};
+  S.meters.water = S.meters.water || {name:'Вода (холодная)',unit:'м³',price:0,priceUnit:'eur',base:0,norm:0,abs:0,nk:true,readings:[]};
+  S.oil = S.oil || {tankL:3000,heightCm:150,nk:false,entries:[]};
+  S.nk = S.nk || {monthly:0,payments:[]};
+  S.rent = S.rent || {monthly:0,payments:[]};
+}
+
+/* ---------- calculations (unchanged logic) ---------- */
 function toMonths(segs, forecastRate){
   const m = new Map(); if (!segs.length) return [];
   const start = segs[0].t0, end = segs[segs.length-1].t1;
@@ -71,8 +207,6 @@ function toMonths(segs, forecastRate){
   if (forecastRate!=null && m.has(lk)){ const o=m.get(lk); if (o.days<dim(lk)){ o.fcQty=o.qty+forecastRate*(dim(lk)-o.days); o.fc=true; } }
   return [...m.values()].map(o=>({...o,label:ymLabel(o.key),dim:dim(o.key),partial:o.days<dim(o.key)}));
 }
-
-/* ---------- meters ---------- */
 function meterCalc(M){
   const r=[...M.readings].sort((a,b)=>pd(a[0])-pd(b[0]));
   const ppu = M.priceUnit==='ct'? M.price/100 : M.price;
@@ -89,58 +223,13 @@ function meterCalc(M){
   out.paid=M.abs*out.days/30.4375;
   return out;
 }
-
-function meterView(id){
-  const M=S.meters[id], c=meterCalc(M), u=M.unit;
-  let k='';
-  if(c.months.length){
-    const pct=M.norm?c.year/M.norm*100:null, cls=pct==null||pct<=100?'ok':'warn';
-    k+=`<div class="kpi"><span>Прогноз за год</span><b class="${cls}">${fmt(c.year,u==='м³'?1:0)} ${u}</b>${pct!=null?`<span>${fmt(pct)}% от нормы ${fmt(M.norm)}</span><div class="bar"><i style="width:${Math.min(pct,100)}%"></i></div>`:'<span>норма не задана</span>'}</div>`;
-    k+=`<div class="kpi"><span>Средний расход</span><b>${fmt(c.daily,u==='м³'?3:1)} ${u}/день</b><span>последний период: ${fmt(c.lastRate,u==='м³'?3:1)}</span></div>`;
-    k+=`<div class="kpi"><span>Стоимость за год (прогноз)</span><b>${fmt(c.yearCost)} €</b><span>≈ ${fmt(c.yearCost/12)} €/мес</span></div>`;
-    if(M.abs){const bal=c.paid-c.costTotal;k+=`<div class="kpi"><span>Abschlag vs факт</span><b class="${bal>=0?'ok':'warn'}">${bal>=0?'+':''}${fmt(bal)} €</b><span>${bal>=0?'переплата (вернут)':'недоплата'} за ${fmt(c.days)} дн.</span></div>`;}
-    else k+=`<div class="kpi"><span>Потрачено с первого показания</span><b>${fmt(c.costTotal)} €</b><span>${fmt(c.used,u==='м³'?1:0)} ${u} за ${fmt(c.days)} дн.</span></div>`;
-  } else k='<div class="kpi" style="grid-column:1/-1"><span>Внесите минимум 2 показания, чтобы появились расчёты.</span></div>';
-  const dp=u==='м³'?2:0;
-  return `
-  <div class="card"><h2>${M.icon} Новое показание</h2>
-  <form id="f_read"><input type="date" id="d" value="${today()}" required><input type="number" step="any" id="v" placeholder="${u}" inputmode="decimal" required><button>Добавить</button></form></div>
-  <div class="kpis">${k}</div>
-  ${c.months.length?`<div class="card"><h2>По месяцам</h2><canvas id="ch" height="220"></canvas></div>
-  <div class="card"><h2>Месяцы и стоимость</h2><table><tr><th>Месяц</th><th>${u}</th>${M.norm?'<th>Норма</th>':''}<th>€</th></tr>${c.months.map(o=>{
-    const q=o.fc?o.fcQty:o.qty, cost=o.fc?o.fcQty*c.ppu+M.base/12:o.cost, n=o.fc?M.norm/365*o.dim:o.norm;
-    return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td class="${!M.norm||q<=n?'':'warn'}">${fmt(q,dp)}</td>${M.norm?`<td>${fmt(n,dp)}</td>`:''}<td>${fmt(cost,2)}</td></tr>`}).join('')}</table>
-  <p class="mut">Между показаниями расход считается равномерным. * — текущий месяц, прогноз по последнему темпу.</p></div>`:''}
-  <div class="card"><h2>Показания</h2><table><tr><th>Дата</th><th>Показание</th><th>${u}/день</th><th></th></tr>${c.r.map((x,i)=>{
-    const rate=i?(x[1]-c.r[i-1][1])/((pd(x[0])-pd(c.r[i-1][0]))/DAY):null;
-    return `<tr><td>${fd(x[0])}</td><td>${fmt(x[1],dp)}</td><td>${rate==null?'—':fmt(rate,u==='м³'?3:1)}</td><td><button class="ghost" data-del="${x[0]}">✕</button></td></tr>`}).reverse().join('')}</table></div>
-  <div class="card"><details><summary>Тариф</summary><div class="set">
-  <div><label>Цена за ${u}, ${M.priceUnit==='ct'?'ct':'€'}</label><input id="s_price" type="number" step="any" value="${M.price}"></div>
-  <div><label>Grundpreis, €/год</label><input id="s_base" type="number" step="any" value="${M.base}"></div>
-  <div><label>Норма, ${u}/год (0 = нет)</label><input id="s_norm" type="number" step="any" value="${M.norm}"></div>
-  <div><label>Abschlag, €/мес (0 = нет)</label><input id="s_abs" type="number" step="any" value="${M.abs}"></div>
-  <div style="grid-column:1/-1"><label><input type="checkbox" id="s_nk" ${M.nk?'checked':''} style="flex:none;width:auto"> оплачивается через Nebenkosten арендодателю</label></div>
-  </div><button id="s_save" style="margin-top:10px">Сохранить</button></details></div>`;
-}
-function meterBind(id){
-  const M=S.meters[id], c=meterCalc(M);
-  $('f_read').onsubmit=e=>{e.preventDefault();const d=$('d').value,v=Number($('v').value);if(!d||!isFinite(v))return;M.readings=M.readings.filter(x=>x[0]!==d);M.readings.push([d,v]);save('Показание добавлено.');};
-  delBind(d=>{M.readings=M.readings.filter(x=>x[0]!==d);});
-  $('s_save').onclick=()=>{Object.assign(M,{price:+$('s_price').value,base:+$('s_base').value,norm:+$('s_norm').value,abs:+$('s_abs').value,nk:$('s_nk').checked});save('Тариф сохранён.');};
-  if(c.months.length){
-    const full=c.months.filter(o=>!o.partial||o.fc);
-    drawChart(full.map(o=>o.label+(o.fc?'*':'')),full.map(o=>+(o.fc?o.fcQty:o.qty).toFixed(2)),full.map(o=>o.fc),M.norm?full.map(o=>+(M.norm/365*o.dim).toFixed(1)):null);
-  }
-}
-
-/* ---------- oil ---------- */
 function oilCalc(){
-  const O=S.oil, toL=cm=>cm/O.heightCm*O.tankL;
+  const O=S.oil, toL=cm=>O.heightCm?cm/O.heightCm*O.tankL:0;
   const e=[...O.entries].sort((a,b)=>pd(a.d)-pd(b.d)||(a.cm!=null)-(b.cm!=null));
   const lv=e.filter(x=>x.cm!=null), fills=e.filter(x=>x.l);
   const out={e,lv,fills,toL,months:[]};
   const lastFill=fills[fills.length-1]; out.ppl=lastFill&&lastFill.eur?lastFill.eur/lastFill.l:null;
-  if(lv.length) out.nowL=toL(lv[lv.length-1].cm);
+  if(lv.length) { out.nowL=toL(lv[lv.length-1].cm); out.nowD=lv[lv.length-1].d; }
   if(lv.length<2) return out;
   const segs=[];
   for(let i=1;i<lv.length;i++){
@@ -151,175 +240,292 @@ function oilCalc(){
   }
   if(!segs.length) return out;
   out.used=segs.reduce((s,x)=>s+x.used,0); out.days=(segs[segs.length-1].t1-segs[0].t0)/DAY; out.daily=out.used/out.days;
-  // recent rate: last ~60 days of segments for a less noisy "now" estimate
-  const tEnd=segs[segs.length-1].t1; let u=0,dd=0; for(let i=segs.length-1;i>=0;i--){const s=segs[i];u+=s.used;dd+=(s.t1-s.t0)/DAY;if(dd>=60)break;}
+  let u=0,dd=0; for(let i=segs.length-1;i>=0;i--){const s=segs[i];u+=s.used;dd+=(s.t1-s.t0)/DAY;if(dd>=60)break;}
   out.recent=u/dd; out.daysLeft=out.recent>0?out.nowL/out.recent:null;
   out.months=toMonths(segs,out.recent);
   return out;
 }
+
+/* ---------- shared pieces ---------- */
+const field = (id,label,attrs='',cls='') => `<div class="field ${cls}"><label for="${id}">${label}</label><input id="${id}" ${attrs}></div>`;
+const fig = (label,value,sub='',cls='',extra='') => `<div class="fig"><span class="cap">${label}</span><span class="v ${cls}">${value}</span>${sub?`<span class="cap">${sub}</span>`:''}${extra}</div>`;
+const delBtn = (key,what) => `<button type="button" class="icon-btn" data-del="${esc(key)}" aria-label="Удалить ${esc(what)}">${icon('x')}</button>`;
+const table = (head,rows,emptyText) => rows.length
+  ? `<div class="tbl"><table><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`
+  : `<p class="empty">${emptyText}</p>`;
+function odometer(value, unit){
+  const dec = unit==='м³' ? 3 : 0;
+  const parts = Math.max(0,value).toFixed(dec).split('.');
+  const int = parts[0].padStart(dec?5:6,'0');
+  const cells = [...int].map(d=>`<span>${d}</span>`).join('') + (dec?[...parts[1]].map(d=>`<span class="red">${d}</span>`).join(''):'');
+  return `<div class="odo-row"><div class="odo" role="img" aria-label="Показание ${fmt(value,dec)} ${unit}">${cells}</div><span class="odo-u" aria-hidden="true">${unit}</span></div>`;
+}
+
+/* ---------- meter pages ---------- */
+function meterView(id){
+  const M=S.meters[id], c=meterCalc(M), u=M.unit, w=u==='м³', dp=w?2:0, rd=w?3:1;
+  const last=c.r[c.r.length-1], prev=c.r[c.r.length-2];
+  let hero = last
+    ? `${odometer(last[1],u)}<div class="hero-meta cap"><span>Последнее показание <b class="num">${fd(last[0])}</b></span>${prev?`<span>+${fmt(last[1]-prev[1],dp)} ${u} за ${fmt((pd(last[0])-pd(prev[0]))/DAY)} ${plural((pd(last[0])-pd(prev[0]))/DAY,'день','дня','дней')}</span>`:''}</div>`
+    : `<p class="empty">Показаний пока нет. Перепишите число со счётчика — это займёт десять секунд.</p>`;
+  let figs='';
+  if(c.months.length){
+    const pct=M.norm?c.year/M.norm*100:null, ok=pct==null||pct<=100;
+    figs+=fig('Прогноз за год',`${fmt(c.year,w?1:0)}<small> ${u}</small>`, pct!=null?`${fmt(pct)}% от нормы ${fmt(M.norm)} — ${ok?'в норме':'выше нормы'}`:'норма не задана', pct==null?'':ok?'good':'bad', pct!=null?`<div class="meter" aria-hidden="true"><i style="width:${Math.min(pct,100)}%;background:var(--${ok?'primary':'bad'})"></i></div>`:'');
+    figs+=fig('Расход в день',`${fmt(c.daily,rd)}<small> ${u}</small>`,`за последний период ${fmt(c.lastRate,rd)}`);
+    figs+=fig('Стоимость за год',eur(c.yearCost),`примерно ${eur(c.yearCost/12)} в месяц`);
+    if(M.abs){const bal=c.paid-c.costTotal;figs+=fig('Abschlag и факт',(bal>=0?'+':'−')+eur(Math.abs(bal)),bal>=0?'переплата, вернут':'недоплата, придётся доплатить',bal>=0?'good':'bad');}
+    else figs+=fig('Потрачено с начала учёта',eur(c.costTotal),`${fmt(c.used,w?1:0)} ${u} за ${fmt(c.days)} ${plural(c.days,'день','дня','дней')}`);
+  }
+  const mrows=c.months.map(o=>{
+    const q=o.fc?o.fcQty:o.qty, cost=o.fc?o.fcQty*c.ppu+M.base/12:o.cost, n=o.fc?M.norm/365*o.dim:o.norm;
+    return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td class="${M.norm&&q>n?'bad':''}">${fmt(q,dp)}</td>${M.norm?`<td>${fmt(n,dp)}</td>`:''}<td>${fmt(cost,2)}</td></tr>`;}).reverse();
+  const rrows=c.r.map((x,i)=>{const rate=i?(x[1]-c.r[i-1][1])/((pd(x[0])-pd(c.r[i-1][0]))/DAY):null;
+    return `<tr><td>${fd(x[0])}</td><td>${fmt(x[1],w?3:0)}</td><td>${rate==null?'—':fmt(rate,rd)}</td><td>${delBtn(x[0],'показание от '+fd(x[0]))}</td></tr>`;}).reverse();
+  return `
+  <section class="card hero" aria-label="${esc(M.name)}">
+    ${hero}
+    <form class="entry" id="f_read">
+      ${field('d','Дата',`type="date" value="${today()}" required`)}
+      ${field('v',`Показание, ${u}`,`type="number" step="any" inputmode="decimal" required ${last?`min="0" placeholder="${fmt(last[1],w?3:0).replace(/\s/g,'')}"`:''}`)}
+      <button class="btn full">Добавить показание</button>
+    </form>
+  </section>
+  ${figs?`<section class="card figs" aria-label="Итоги">${figs}</section>`:`<p class="note" style="margin:0 0 16px">Внесите ещё одно показание — появятся расход, прогноз и стоимость.</p>`}
+  ${c.months.length?`<section class="card"><h2>Расход по месяцам, ${u}</h2><canvas id="ch" height="220" role="img" aria-label="График расхода по месяцам; те же числа в таблице ниже"></canvas></section>
+  <section class="card"><h2>Месяцы и стоимость</h2>${table(['Месяц',u].concat(M.norm?['Норма']:[]).concat(['€']),mrows,'')}
+  <p class="note">Между показаниями расход распределён равномерно по дням. Звёздочка — текущий месяц, прогноз по последнему темпу.</p></section>`:''}
+  <section class="card"><h2>Показания</h2>${table(['Дата','Показание',`${u} в день`,'<span class="sr">Действия</span>'],rrows,'Пока пусто.')}</section>
+  <section class="card"><details><summary>Тариф</summary><div class="set">
+    ${field('s_price',`Цена за ${u}, ${M.priceUnit==='ct'?'центов':'€'}`,`type="number" step="any" inputmode="decimal" value="${M.price}"`)}
+    ${field('s_base','Grundpreis, € в год',`type="number" step="any" inputmode="decimal" value="${M.base}"`)}
+    ${field('s_norm',`Норма, ${u} в год`,`type="number" step="any" inputmode="decimal" value="${M.norm}"`)}
+    ${field('s_abs','Abschlag, € в месяц',`type="number" step="any" inputmode="decimal" value="${M.abs}"`)}
+    <label class="check full"><input type="checkbox" id="s_nk" ${M.nk?'checked':''}> Оплачивается через Nebenkosten арендодателю</label>
+    <p class="note full" style="margin:0">0 в поле нормы или Abschlag — значит, не учитывать.</p>
+  </div><button class="btn secondary" id="s_save">Сохранить тариф</button></details></section>`;
+}
+function meterBind(id){
+  const M=S.meters[id], c=meterCalc(M);
+  $('f_read').onsubmit=e=>{e.preventDefault();const d=$('d').value,v=Number($('v').value);if(!d||!isFinite(v))return;
+    const last=c.r[c.r.length-1]; if(last && pd(d)>pd(last[0]) && v<last[1]){ setStatus(`Показание меньше прошлого (${fmt(last[1])}). Проверьте число.`,true); return; }
+    M.readings=M.readings.filter(x=>x[0]!==d);M.readings.push([d,v]);save('Показание добавлено.');};
+  delBind(d=>{M.readings=M.readings.filter(x=>x[0]!==d);},'Показание удалено.');
+  $('s_save').onclick=()=>{Object.assign(M,{price:+$('s_price').value,base:+$('s_base').value,norm:+$('s_norm').value,abs:+$('s_abs').value,nk:$('s_nk').checked});save('Тариф сохранён.');};
+  if(c.months.length){
+    const full=c.months.filter(o=>!o.partial||o.fc);
+    barChart(full.map(o=>o.label+(o.fc?'*':'')),[{label:'Расход',data:full.map(o=>+(o.fc?o.fcQty:o.qty).toFixed(2)),color:css(id==='water'?'--s-water':'--s-power'),fc:full.map(o=>o.fc)}],
+      M.norm?{label:'Норма',data:full.map(o=>+(M.norm/365*o.dim).toFixed(1))}:null,false);
+  }
+}
+
+/* ---------- oil ---------- */
 function oilView(){
   const O=S.oil,c=oilCalc();
-  let k='';
-  if(c.nowL!=null) k+=`<div class="kpi"><span>Сейчас в баке (≈)</span><b>${fmt(c.nowL)} л</b><span>${fmt(c.nowL/O.tankL*100)}% от ${fmt(O.tankL)} л</span><div class="bar"><i style="width:${Math.min(100,c.nowL/O.tankL*100)}%"></i></div></div>`;
+  const pct=c.nowL!=null&&O.tankL?Math.min(100,c.nowL/O.tankL*100):0;
+  const hero = c.nowL!=null
+    ? `<div class="tank-wrap"><div class="tank" role="img" aria-label="Бак заполнен примерно на ${fmt(pct)}%"><i style="height:${pct}%"></i><b>${fmt(pct)}%</b></div>
+       <div class="hero-meta" style="flex-direction:column;gap:6px"><span class="cap">В баке примерно</span><span style="font-size:28px;line-height:32px;font-weight:600">${fmt(c.nowL)}<small style="font-size:16px;font-weight:500"> л из ${fmt(O.tankL)}</small></span>
+       <span class="cap">Замер ${fd(c.nowD)}</span>${c.daysLeft!=null?`<span class="${c.daysLeft<45?'warn':''}" style="font-weight:600">Хватит примерно на ${fmt(c.daysLeft)} ${plural(c.daysLeft,'день','дня','дней')}${c.daysLeft<45?' — пора заказывать':''}</span>`:''}</div></div>`
+    : `<p class="empty">Замеров пока нет. Опустите щуп и запишите, на скольких сантиметрах масло.</p>`;
+  let figs='';
   if(c.daily!=null){
-    k+=`<div class="kpi"><span>Расход (последние ~60 дн.)</span><b>${fmt(c.recent,1)} л/день</b><span>в среднем за всё время: ${fmt(c.daily,1)}</span></div>`;
-    k+=`<div class="kpi"><span>Хватит примерно на</span><b class="${c.daysLeft!=null&&c.daysLeft<45?'warn':''}">${c.daysLeft!=null?fmt(c.daysLeft)+' дн.':'—'}</b><span>${c.daysLeft!=null?'до ≈ '+fd(new Date(Date.now()+c.daysLeft*DAY).toISOString().slice(0,10))+' при текущем темпе':''}</span></div>`;
-    k+=`<div class="kpi"><span>Стоимость в месяц (≈)</span><b>${c.ppl?fmt(c.recent*30.4*c.ppl)+' €':'—'}</b><span>${c.ppl?'по цене последней заправки '+fmt(c.ppl,2)+' €/л':'внесите заправку с ценой'}</span></div>`;
+    figs+=fig('Расход сейчас',`${fmt(c.recent,1)}<small> л в день</small>`,'по последним ~60 дням');
+    figs+=fig('В среднем',`${fmt(c.daily,1)}<small> л в день</small>`,`за ${fmt(c.days)} ${plural(c.days,'день','дня','дней')}`);
+    figs+=fig('Отопление в месяц',c.ppl?eur(c.recent*30.4*c.ppl):'—',c.ppl?`по ${fmt(c.ppl,2)} € за литр`:'внесите заправку с ценой');
+    figs+=fig('Закончится около',c.daysLeft!=null?fd(new Date(Date.now()+c.daysLeft*DAY).toISOString().slice(0,10)):'—','при нынешнем темпе',c.daysLeft!=null&&c.daysLeft<45?'warn':'');
   }
-  if(!k) k='<div class="kpi" style="grid-column:1/-1"><span>Внесите минимум 2 замера щупом, чтобы появился расход.</span></div>';
+  const mrows=c.months.map(o=>{const q=o.fc?o.fcQty:o.qty;return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td>${fmt(q)}</td><td>${c.ppl?fmt(q*c.ppl,2):'—'}</td></tr>`}).reverse();
+  const erows=c.e.map(x=>`<tr><td>${fd(x.d)}</td><td class="t">${x.cm!=null?'Замер, '+fmt(x.cm,1)+' см':'Заправка'+(x.eur?', '+eur(x.eur,2):'')}</td><td>${x.cm!=null?'≈ '+fmt(c.toL(x.cm)):'+'+fmt(x.l)}</td><td>${delBtn(O.entries.indexOf(x),(x.cm!=null?'замер':'заправку')+' от '+fd(x.d))}</td></tr>`).reverse();
   return `
-  <div class="card"><h2>🛢️ Замер щупом</h2>
-  <form id="f_lv"><input type="date" id="d" value="${today()}" required><input type="number" step="any" id="cm" placeholder="см" inputmode="decimal" required><button>Добавить</button></form>
-  <p class="mut" id="cmhint">≈ — л</p>
-  <h2 style="margin-top:14px">Заправка</h2>
-  <form id="f_fill"><input type="date" id="fd" value="${today()}" required><input type="number" step="any" id="fl" placeholder="литров" required><input type="number" step="any" id="fe" placeholder="€ всего"><button>Добавить</button></form>
-  <p class="mut">После заправки сделайте и новый замер щупом — тогда расход посчитается точнее.</p></div>
-  <div class="kpis">${k}</div>
-  ${c.months.length?`<div class="card"><h2>Расход по месяцам, л</h2><canvas id="ch" height="220"></canvas>
-  <table style="margin-top:10px"><tr><th>Месяц</th><th>л</th><th>€ (≈)</th></tr>${c.months.map(o=>{const q=o.fc?o.fcQty:o.qty;return `<tr><td>${o.label}${o.fc?' *':o.partial?' (часть)':''}</td><td>${fmt(q)}</td><td>${c.ppl?fmt(q*c.ppl,2):'—'}</td></tr>`}).join('')}</table>
-  <p class="mut">Замеры щупом приблизительны: месяцы между редкими замерами сглажены, отдельные значения могут «скакать». Тренд за несколько месяцев надёжнее.</p></div>`:''}
-  <div class="card"><h2>Записи</h2><table><tr><th>Дата</th><th>Что</th><th>Литры</th><th></th></tr>${c.e.map((x,i)=>`<tr><td>${fd(x.d)}</td><td>${x.cm!=null?'замер '+fmt(x.cm,1)+' см':'заправка'+(x.eur?' · '+fmt(x.eur,2)+' €':'')}</td><td>${x.cm!=null?'≈ '+fmt(c.toL(x.cm)):'+'+fmt(x.l)}</td><td><button class="ghost" data-del="${O.entries.indexOf(x)}">✕</button></td></tr>`).reverse().join('')}</table></div>
-  <div class="card"><details><summary>Бак</summary><div class="set">
-  <div><label>Объём бака, л</label><input id="o_l" type="number" value="${O.tankL}"></div>
-  <div><label>Высота при полном баке, см</label><input id="o_h" type="number" step="any" value="${O.heightCm}"></div>
-  <div style="grid-column:1/-1"><label><input type="checkbox" id="o_nk" ${O.nk?'checked':''} style="flex:none;width:auto"> оплачивается через Nebenkosten арендодателю</label></div>
-  </div><p class="mut">Пересчёт см → литры линейный (подходит для прямоугольных и батарейных баков). Если на баке или щупе есть таблица пересчёта — скажите, добавлю её.</p>
-  <button id="o_save">Сохранить</button></details></div>`;
+  <section class="card hero" aria-label="Масло в котле">
+    ${hero}
+    <form class="entry" id="f_lv">
+      ${field('d','Дата замера',`type="date" value="${today()}" required`)}
+      ${field('cm','Щуп, см',`type="number" step="any" inputmode="decimal" required aria-describedby="cmhint"`)}
+      <p class="cap full" id="cmhint" style="margin:-4px 0 0">Введите сантиметры — здесь появится объём в литрах.</p>
+      <button class="btn full">Добавить замер</button>
+    </form>
+  </section>
+  <section class="card"><h2>Заправка</h2>
+    <form class="entry" id="f_fill">
+      ${field('fd','Дата',`type="date" value="${today()}" required`)}
+      ${field('fl','Литров',`type="number" step="any" inputmode="decimal" required`)}
+      ${field('fe','Сумма, €',`type="number" step="any" inputmode="decimal"`,'full')}
+      <button class="btn full">Записать заправку</button>
+    </form>
+    <p class="note">После заправки сделайте и замер щупом — расход посчитается точнее.</p></section>
+  ${figs?`<section class="card figs" aria-label="Итоги">${figs}</section>`:`<p class="note" style="margin:0 0 16px">Нужно минимум два замера, чтобы появился расход.</p>`}
+  ${c.months.length?`<section class="card"><h2>Расход по месяцам, л</h2><canvas id="ch" height="220" role="img" aria-label="График расхода масла по месяцам; те же числа в таблице ниже"></canvas>
+  ${table(['Месяц','Литры','€, примерно'],mrows,'')}
+  <p class="note">Щуп даёт приблизительные цифры, поэтому отдельные месяцы могут «скакать». Тренд за несколько месяцев надёжнее.</p></section>`:''}
+  <section class="card"><h2>Записи</h2>${table(['Дата','Что','Литры','<span class="sr">Действия</span>'],erows,'Пока пусто.')}</section>
+  <section class="card"><details><summary>Бак</summary><div class="set">
+    ${field('o_l','Объём бака, л',`type="number" inputmode="decimal" value="${O.tankL}"`)}
+    ${field('o_h','Высота при полном баке, см',`type="number" step="any" inputmode="decimal" value="${O.heightCm}"`)}
+    <label class="check full"><input type="checkbox" id="o_nk" ${O.nk?'checked':''}> Оплачивается через Nebenkosten арендодателю</label>
+    <p class="note full" style="margin:0">Сантиметры пересчитываются в литры линейно — это верно для прямоугольных и батарейных баков.</p>
+  </div><button class="btn secondary" id="o_save">Сохранить</button></details></section>`;
 }
 function oilBind(){
   const O=S.oil,c=oilCalc();
-  $('cm').oninput=()=>{const v=+$('cm').value;$('cmhint').textContent=v?'≈ '+fmt(c.toL(v))+' л':'≈ — л';};
+  $('cm').oninput=()=>{const v=+$('cm').value;$('cmhint').textContent=v?`Это примерно ${fmt(c.toL(v))} л.`:'Введите сантиметры — здесь появится объём в литрах.';};
   $('f_lv').onsubmit=e=>{e.preventDefault();const d=$('d').value,cm=+$('cm').value;if(!d||!isFinite(cm))return;O.entries=O.entries.filter(x=>!(x.d===d&&x.cm!=null));O.entries.push({d,cm});save('Замер добавлен.');};
-  $('f_fill').onsubmit=e=>{e.preventDefault();const d=$('fd').value,l=+$('fl').value,eur=+$('fe').value||0;if(!d||!l)return;O.entries.push({d,l,eur});save('Заправка добавлена.');};
-  delBind(i=>{O.entries.splice(+i,1);});
+  $('f_fill').onsubmit=e=>{e.preventDefault();const d=$('fd').value,l=+$('fl').value,e2=+$('fe').value||0;if(!d||!l)return;O.entries.push({d,l,eur:e2});save('Заправка записана.');};
+  delBind(i=>{O.entries.splice(+i,1);},'Запись удалена.');
   $('o_save').onclick=()=>{O.tankL=+$('o_l').value;O.heightCm=+$('o_h').value;O.nk=$('o_nk').checked;save('Бак сохранён.');};
-  if(c.months.length){const full=c.months.filter(o=>!o.partial||o.fc);drawChart(full.map(o=>o.label+(o.fc?'*':'')),full.map(o=>Math.round(o.fc?o.fcQty:o.qty)),full.map(o=>o.fc),null);}
+  if(c.months.length){const full=c.months.filter(o=>!o.partial||o.fc);barChart(full.map(o=>o.label+(o.fc?'*':'')),[{label:'Литры',data:full.map(o=>Math.round(o.fc?o.fcQty:o.qty)),color:css('--s-oil'),fc:full.map(o=>o.fc)}],null,false);}
 }
 
-/* ---------- Nebenkosten ---------- */
-function nkView(){
-  const N=S.nk, p=[...N.payments].sort((a,b)=>pd(a.d)-pd(b.d));
-  const byYear={}; p.forEach(x=>{const y=x.d.slice(0,4);byYear[y]=(byYear[y]||0)+x.eur;});
-  const y=today().slice(0,4), paidY=byYear[y]||0;
-  // tracked costs of items marked as via landlord, this calendar year
-  let tracked=0, items=[];
-  for(const id in S.meters){const M=S.meters[id];if(!M.nk)continue;const c=meterCalc(M);const v=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.cost,0);tracked+=v;items.push(M.name+': '+fmt(v,2)+' €');}
-  if(S.oil.nk){const c=oilCalc();if(c.ppl){const v=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.qty*c.ppl,0);tracked+=v;items.push('Масло: '+fmt(v,2)+' €');}}
-  return `
-  <div class="card"><h2>🧾 Платёж арендодателю</h2>
-  <form id="f_nk"><input type="date" id="d" value="${today()}" required><input type="number" step="any" id="eur" placeholder="€" required><input id="note" placeholder="за что (необязательно)"><button>Добавить</button></form>
-  ${N.monthly?`<p class="mut">Ежемесячная предоплата: ${fmt(N.monthly,2)} € · <a href="#" id="quick" style="color:var(--ac)">внести за этот месяц</a></p>`:''}</div>
-  <div class="kpis">
-  <div class="kpi"><span>Оплачено в ${y}</span><b>${fmt(paidY,2)} €</b><span>${p.filter(x=>x.d.startsWith(y)).length} платежей</span></div>
-  <div class="kpi"><span>Расход по счётчикам «через арендодателя» в ${y}</span><b>${items.length?fmt(tracked,2)+' €':'—'}</b><span>${items.length?esc(items.join(' · ')):'отметьте в тарифе воды/масла'}</span></div>
-  </div>
-  <p class="mut" style="margin:-6px 0 14px">В Nebenkosten обычно входит и то, что вы не меряете (вывоз мусора, Grundsteuer, уборка, страховка), поэтому оплачено почти всегда больше, чем «по счётчикам». Самое полезное сравнение — с прошлогодней Abrechnung.</p>
-  <div class="card"><h2>По годам</h2><table><tr><th>Год</th><th>Оплачено</th></tr>${Object.keys(byYear).sort().reverse().map(k=>`<tr><td>${k}</td><td>${fmt(byYear[k],2)} €</td></tr>`).join('')||'<tr><td colspan=2 class="mut">Пока нет платежей</td></tr>'}</table></div>
-  <div class="card"><h2>Платежи</h2><table><tr><th>Дата</th><th>За что</th><th>€</th><th></th></tr>${p.map(x=>`<tr><td>${fd(x.d)}</td><td style="text-align:left">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td><button class="ghost" data-del="${N.payments.indexOf(x)}">✕</button></td></tr>`).reverse().join('')}</table></div>
-  <div class="card"><details><summary>Настройки</summary><div class="set"><div><label>Предоплата в месяц, €</label><input id="n_m" type="number" step="any" value="${N.monthly}"></div></div><button id="n_save" style="margin-top:10px">Сохранить</button></details></div>`;
+/* ---------- payments (rent + Nebenkosten share one layout) ---------- */
+function stripHTML(payments){
+  const cur=nowK(), cells=[];
+  for(let k=cur-5;k<=cur;k++){
+    const paid=payments.filter(x=>ym(pd(x.d))===k).reduce((s,x)=>s+x.eur,0);
+    cells.push(`<li class="mo ${paid?'paid':''} ${k===cur?'now':''}" aria-label="${MONF[k%12]} ${Math.floor(k/12)}: ${paid?'оплачено '+eur(paid,2):'нет платежа'}"><span class="ic">${paid?icon('check'):''}</span><span>${MON[k%12]}</span></li>`);
+  }
+  return `<ul class="strip" style="list-style:none;margin:0;padding:0">${cells.join('')}</ul>`;
 }
-function nkBind(){
-  const N=S.nk;
-  $('f_nk').onsubmit=e=>{e.preventDefault();const d=$('d').value,eur=+$('eur').value;if(!d||!eur)return;N.payments.push({d,eur,note:$('note').value.trim()});save('Платёж добавлен.');};
-  if($('quick')) $('quick').onclick=e=>{e.preventDefault();N.payments.push({d:today(),eur:N.monthly,note:'Vorauszahlung '+ymLabel(ym(Date.now()))});save('Платёж добавлен.');};
-  delBind(i=>{N.payments.splice(+i,1);});
-  $('n_save').onclick=()=>{N.monthly=+$('n_m').value;save('Сохранено.');};
-}
-
-
-/* ---------- rent ---------- */
-function norm(){ S.rent = S.rent || {monthly:0, payments:[]}; S.nk = S.nk || {monthly:0,payments:[]}; }
-function rentView(){
-  norm(); const R=S.rent, p=[...R.payments].sort((a,b)=>pd(a.d)-pd(b.d));
-  const y=today().slice(0,4), paidY=p.filter(x=>x.d.startsWith(y)).reduce((s,x)=>s+x.eur,0);
-  const curK=ym(Date.now()), paidNow=p.some(x=>ym(pd(x.d))===curK);
+function payView(kind){
+  const P=S[kind], isRent=kind==='rent', p=[...P.payments].sort((a,b)=>pd(a.d)-pd(b.d));
+  const y=today().slice(0,4), inY=p.filter(x=>x.d.startsWith(y)), paidY=inY.reduce((s,x)=>s+x.eur,0);
+  const cur=nowK(), paidNow=p.some(x=>ym(pd(x.d))===cur);
   const byYear={}; p.forEach(x=>{const k=x.d.slice(0,4);byYear[k]=(byYear[k]||0)+x.eur;});
+  const what=isRent?'Аренда':'Nebenkosten';
+  let figs = fig(MONF[cur%12][0].toUpperCase()+MONF[cur%12].slice(1), paidNow?'Оплачено':'Не оплачено', P.monthly?`${eur(P.monthly,2)} в месяц`:'сумма в месяц не задана', (paidNow?'good':'bad')+' word');
+  figs += fig(`Оплачено в ${y}`, eur(paidY,2), `${inY.length} ${plural(inY.length,'платёж','платежа','платежей')}`);
+  let extra='';
+  if(!isRent){
+    let tracked=0, items=[];
+    for(const id in S.meters){const M=S.meters[id];if(!M.nk)continue;const v=meterCalc(M).months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.cost,0);tracked+=v;items.push(`${M.name}: ${eur(v,2)}`);}
+    if(S.oil.nk){const c=oilCalc();if(c.ppl){const v=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.qty*c.ppl,0);tracked+=v;items.push('Масло: '+eur(v,2));}}
+    figs += fig('Из этого по счётчикам', items.length?eur(tracked,2):'—', items.length?esc(items.join('; ')):'отметьте воду или масло в их настройках');
+    figs += fig('Остальное', items.length?eur(Math.max(0,paidY-tracked),2):'—', 'мусор, налог, уборка и прочее');
+    extra = `<p class="note">В Nebenkosten входит и то, что вы не меряете, поэтому «по счётчикам» почти всегда меньше. Полезнее всего сравнивать с прошлогодней Abrechnung.</p>`;
+  }
+  const rows=p.map(x=>`<tr><td>${fd(x.d)}</td><td class="t">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td>${delBtn(P.payments.indexOf(x),'платёж от '+fd(x.d))}</td></tr>`).reverse();
+  const yrows=Object.keys(byYear).sort().reverse().map(k=>`<tr><td>${k}</td><td>${fmt(byYear[k],2)}</td></tr>`);
   return `
-  <div class="card"><h2>🏡 Платёж аренды</h2>
-  <form id="f_rent"><input type="date" id="d" value="${today()}" required><input type="number" step="any" id="eur" placeholder="€" value="${R.monthly||''}" required><input id="note" placeholder="комментарий (необязательно)"><button>Добавить</button></form>
-  ${R.monthly?`<p class="mut">Аренда: ${fmt(R.monthly,2)} €/мес · <a href="#" id="quick" style="color:var(--ac)">внести за ${ymLabel(curK)}</a></p>`:''}</div>
-  <div class="kpis">
-  <div class="kpi"><span>${ymLabel(curK)}</span><b class="${paidNow?'ok':'warn'}">${paidNow?'оплачено':'не оплачено'}</b><span>${R.monthly?fmt(R.monthly,2)+' €/мес':'задайте сумму в настройках'}</span></div>
-  <div class="kpi"><span>Оплачено в ${y}</span><b>${fmt(paidY,2)} €</b><span>${p.filter(x=>x.d.startsWith(y)).length} платежей</span></div>
-  </div>
-  <div class="card"><h2>По годам</h2><table><tr><th>Год</th><th>Оплачено</th></tr>${Object.keys(byYear).sort().reverse().map(k=>`<tr><td>${k}</td><td>${fmt(byYear[k],2)} €</td></tr>`).join('')||'<tr><td colspan=2 class="mut">Пока нет платежей</td></tr>'}</table></div>
-  <div class="card"><h2>Платежи</h2><table><tr><th>Дата</th><th>Комментарий</th><th>€</th><th></th></tr>${p.map(x=>`<tr><td>${fd(x.d)}</td><td style="text-align:left">${esc(x.note||'')}</td><td>${fmt(x.eur,2)}</td><td><button class="ghost" data-del="${R.payments.indexOf(x)}">✕</button></td></tr>`).reverse().join('')}</table></div>
-  <div class="card"><details><summary>Настройки</summary><div class="set"><div><label>Аренда в месяц (Kaltmiete), €</label><input id="r_m" type="number" step="any" value="${R.monthly}"></div></div><button id="r_save" style="margin-top:10px">Сохранить</button></details></div>`;
+  <section class="card hero" aria-label="${what}: последние полгода">
+    <h2 style="margin:0">${what} за последние полгода</h2>
+    ${stripHTML(p)}
+    ${P.monthly&&!paidNow?`<button class="btn" id="quick">Отметить оплату за ${MONF[cur%12]} — ${eur(P.monthly,2)}</button>`:''}
+  </section>
+  <section class="card figs" aria-label="Итоги">${figs}</section>
+  ${extra?`<div style="margin:-8px 0 16px">${extra}</div>`:''}
+  <section class="card"><h2>Другой платёж</h2>
+    <form class="entry" id="f_pay">
+      ${field('d','Дата',`type="date" value="${today()}" required`)}
+      ${field('eur','Сумма, €',`type="number" step="any" inputmode="decimal" required value="${P.monthly||''}"`)}
+      ${field('note','Комментарий',`placeholder="${isRent?'например, за декабрь':'например, Nachzahlung 2025'}"`,'full')}
+      <button class="btn full">Добавить платёж</button>
+    </form></section>
+  <section class="card"><h2>Платежи</h2>${table(['Дата','Комментарий','€','<span class="sr">Действия</span>'],rows,'Платежей пока нет.')}</section>
+  ${yrows.length>1?`<section class="card"><h2>По годам</h2>${table(['Год','Оплачено, €'],yrows,'')}</section>`:''}
+  <section class="card"><details><summary>Сумма в месяц</summary><div class="set">
+    ${field('m_m',isRent?'Аренда (Kaltmiete), € в месяц':'Предоплата Nebenkosten, € в месяц',`type="number" step="any" inputmode="decimal" value="${P.monthly}"`,'full')}
+  </div><button class="btn secondary" id="m_save">Сохранить</button></details></section>`;
 }
-function rentBind(){
-  const R=S.rent;
-  $('f_rent').onsubmit=e=>{e.preventDefault();const d=$('d').value,eur=+$('eur').value;if(!d||!eur)return;R.payments.push({d,eur,note:$('note').value.trim()});save('Платёж добавлен.');};
-  if($('quick')) $('quick').onclick=e=>{e.preventDefault();R.payments.push({d:today(),eur:R.monthly,note:'Miete '+ymLabel(ym(Date.now()))});save('Платёж добавлен.');};
-  delBind(i=>{R.payments.splice(+i,1);});
-  $('r_save').onclick=()=>{R.monthly=+$('r_m').value;save('Сохранено.');};
+function payBind(kind){
+  const P=S[kind], isRent=kind==='rent';
+  $('f_pay').onsubmit=e=>{e.preventDefault();const d=$('d').value,v=+$('eur').value;if(!d||!v)return;P.payments.push({d,eur:v,note:$('note').value.trim()});save('Платёж добавлен.');};
+  if($('quick')) $('quick').onclick=()=>{P.payments.push({d:today(),eur:P.monthly,note:(isRent?'Miete ':'Vorauszahlung ')+ymLabel(nowK())});save('Оплата отмечена.');};
+  delBind(i=>{P.payments.splice(+i,1);},'Платёж удалён.');
+  $('m_save').onclick=()=>{P.monthly=+$('m_m').value;save('Сохранено.');};
 }
 
 /* ---------- summary ---------- */
-const SERIES=[['rent','Аренда','#7c3aed'],['nk','Nebenkosten','#0891b2'],['power','Свет','#1d5fd1'],['water','Вода','#06b6d4'],['oil','Масло','#c2410c']];
+const SERIES=[['rent','Аренда','--s-rent'],['nk','Nebenkosten','--s-nk'],['power','Свет','--s-power'],['water','Вода','--s-water'],['oil','Масло','--s-oil']];
 function summaryCalc(){
-  norm(); const m=new Map(), add=(k,cat,v)=>{if(!v)return;if(!m.has(k))m.set(k,{key:k});const o=m.get(k);o[cat]=(o[cat]||0)+v;};
-  for(const id of ['power','water']){const M=S.meters[id]; if(!M||M.nk) continue; meterCalc(M).months.forEach(o=>add(o.key,id,o.cost));}
-  if(!S.oil.nk){const c=oilCalc(); if(c.ppl) c.months.forEach(o=>add(o.key,'oil',o.qty*c.ppl));}
+  const m=new Map(), part={}, add=(k,cat,v,partial)=>{if(!v)return;if(!m.has(k))m.set(k,{key:k});const o=m.get(k);o[cat]=(o[cat]||0)+v;if(partial)(part[cat]=part[cat]||new Set()).add(k);};
+  for(const id of ['power','water']){const M=S.meters[id]; if(!M||M.nk) continue; meterCalc(M).months.forEach(o=>add(o.key,id,o.cost,o.partial));}
+  if(!S.oil.nk){const c=oilCalc(); if(c.ppl) c.months.forEach(o=>add(o.key,'oil',o.qty*c.ppl,o.partial));}
   S.rent.payments.forEach(x=>add(ym(pd(x.d)),'rent',x.eur));
   S.nk.payments.forEach(x=>add(ym(pd(x.d)),'nk',x.eur));
   const keys=[...m.keys()]; if(!keys.length) return {months:[]};
-  const lo=Math.min(...keys), hi=Math.max(...keys,ym(Date.now())), months=[];
+  const lo=Math.min(...keys), hi=Math.max(...keys,nowK()), months=[];
   for(let k=lo;k<=hi;k++){const o=m.get(k)||{key:k}; o.total=SERIES.reduce((s,[c])=>s+(o[c]||0),0); o.label=ymLabel(k); months.push(o);}
-  const cur=ym(Date.now()), full=months.filter(o=>o.key<cur && o.total>0);
-  const avg={}; SERIES.forEach(([c])=>avg[c]=full.length?full.reduce((s,o)=>s+(o[c]||0),0)/full.length:0);
+  const full=months.filter(o=>o.key<nowK() && o.total>0);
+  // each item is averaged over its own complete months: from its first to its last month with data,
+  // skipping the current month and months a meter covers only partly
+  const avg={}, span={};
+  SERIES.forEach(([c])=>{
+    const ks=months.filter(o=>o[c]&&o.key<nowK()&&!(part[c]&&part[c].has(o.key))).map(o=>o.key);
+    if(!ks.length){avg[c]=0;return;}
+    const a=Math.min(...ks), b=Math.max(...ks), inR=months.filter(o=>o.key>=a&&o.key<=b&&!(part[c]&&part[c].has(o.key)));
+    avg[c]=inR.reduce((s,o)=>s+(o[c]||0),0)/inR.length; span[c]=inR.length;
+  });
   avg.total=SERIES.reduce((s,[c])=>s+avg[c],0);
-  return {months, full, avg};
+  return {months, full, avg, span};
 }
 function summaryView(){
   const c=summaryCalc();
-  if(!c.months.length) return '<div class="card">Пока нет данных о расходах.</div>';
+  if(!c.months.length) return `<section class="card"><p class="empty">Расходов пока нет. Начните с вкладки «Свет» или внесите платёж аренды.</p></section>`;
   const y=today().slice(0,4), yearSum=c.months.filter(o=>String(Math.floor(o.key/12))===y).reduce((s,o)=>s+o.total,0);
-  const via=[]; for(const id in S.meters) if(S.meters[id].nk) via.push(S.meters[id].name); if(S.oil.nk) via.push('масло');
+  const cur=c.months.find(o=>o.key===nowK())||{total:0};
+  const parts=SERIES.filter(([k])=>c.avg[k]>0);
+  const via=[]; for(const id in S.meters) if(S.meters[id].nk) via.push(S.meters[id].name.toLowerCase()); if(S.oil.nk) via.push('масло');
+  const used=SERIES.filter(([k])=>c.months.some(o=>o[k]));
+  const rows=c.months.map(o=>`<tr><td>${o.label}</td>${used.map(([k])=>`<td>${o[k]?fmt(o[k]):'—'}</td>`).join('')}<td>${fmt(o.total)}</td></tr>`).reverse();
   return `
-  <div class="kpis">
-  <div class="kpi"><span>В среднем в месяц</span><b>${fmt(c.avg.total)} €</b><span>по ${c.full.length} заверш. мес.</span></div>
-  <div class="kpi"><span>Всего в ${y}</span><b>${fmt(yearSum)} €</b><span>с учётом текущего месяца</span></div>
-  </div>
-  <div class="card"><h2>Расходы на дом по месяцам, €</h2><canvas id="ch" height="260"></canvas></div>
-  <div class="card"><h2>Среднее в месяц по статьям</h2><table><tr><th>Статья</th><th>€/мес</th><th>доля</th></tr>${SERIES.filter(([k])=>c.avg[k]).map(([k,l])=>`<tr><td>${l}</td><td>${fmt(c.avg[k],2)}</td><td>${fmt(c.avg[k]/c.avg.total*100)}%</td></tr>`).join('')}<tr><td><b>Итого</b></td><td><b>${fmt(c.avg.total,2)}</b></td><td></td></tr></table>
-  <p class="mut">Свет, вода и масло — фактическое потребление × цена (интерполяция по показаниям). Аренда и Nebenkosten — по датам платежей. Среднее — только по завершённым месяцам.${via.length?' '+esc(via.join(', '))+' отмечены «через Nebenkosten», поэтому отдельно не считаются — они уже в платежах арендодателю.':''}</p></div>
-  <div class="card"><h2>По месяцам</h2><table><tr><th>Месяц</th>${SERIES.map(([,l])=>`<th>${l}</th>`).join('')}<th>Итого</th></tr>${c.months.map(o=>`<tr><td>${o.label}</td>${SERIES.map(([k])=>`<td>${o[k]?fmt(o[k]):'—'}</td>`).join('')}<td><b>${fmt(o.total)}</b></td></tr>`).reverse().join('')}</table></div>`;
+  <section class="card hero" aria-label="Средний месяц">
+    ${c.full.length?`<p class="lead">Обычный месяц обходится в <span class="num">${eur(c.avg.total)}</span></p>
+    <div class="comp" role="img" aria-label="Состав среднего месяца, подробности в списке ниже">${parts.map(([k,,v])=>`<i style="width:${c.avg[k]/c.avg.total*100}%;background:var(${v})"></i>`).join('')}</div>
+    <ul class="legend">${parts.map(([k,l,v])=>`<li><span class="sw" style="background:var(${v})"></span><span>${l}</span><span class="num">${eur(c.avg[k])}</span><span class="cap num" style="width:3.2em;text-align:right">${fmt(c.avg[k]/c.avg.total*100)}%</span></li>`).join('')}</ul>
+    <p class="note" style="margin-top:4px">Каждая статья усреднена по завершённым месяцам, за которые по ней есть данные, — поэтому месяцы без внесённой аренды не занижают итог.</p>`
+    :`<p class="lead">Первый месяц ещё не закончился</p><p class="note" style="margin:0">Среднее появится, когда завершится хотя бы один месяц с данными.</p>`}
+  </section>
+  <section class="card figs" aria-label="Итоги">
+    ${fig(`Всего в ${y}`,eur(yearSum),'включая текущий месяц')}
+    ${fig(MONF[nowK()%12][0].toUpperCase()+MONF[nowK()%12].slice(1),eur(cur.total),'пока внесено')}
+  </section>
+  <section class="card"><h2>Расходы на дом по месяцам, €</h2><canvas id="ch" height="260" role="img" aria-label="Столбцы расходов по месяцам с разбивкой по статьям; те же числа в таблице ниже"></canvas>
+  <p class="note">Свет, вода и масло — по расходу и цене. Аренда и Nebenkosten — по датам платежей.${via.length?` ${esc(via.join(', ')).replace(/^./,s=>s.toUpperCase())} ${via.length>1?'оплачиваются':'оплачивается'} через Nebenkosten и отдельно не считается, чтобы не учесть дважды.`:''}</p></section>
+  <section class="card"><h2>По месяцам, €</h2>${table(['Месяц'].concat(used.map(s=>s[1])).concat(['Итого']),rows,'')}</section>`;
 }
 function summaryBind(){
-  const c=summaryCalc(); if(!c.months.length||!window.Chart) return;
-  const dark=matchMedia('(prefers-color-scheme:dark)').matches, grid=dark?'#2b313a':'#e5e7eb', tx=dark?'#9aa1ab':'#6b7280';
-  const ds=SERIES.filter(([k])=>c.months.some(o=>o[k])).map(([k,l,col])=>({label:l,data:c.months.map(o=>+(o[k]||0).toFixed(2)),backgroundColor:col,stack:'s'}));
-  ds.push({label:'Среднее',type:'line',data:c.months.map(()=>+c.avg.total.toFixed(2)),borderColor:tx,borderDash:[5,4],pointRadius:0,borderWidth:2});
-  chart=new Chart($('ch'),{type:'bar',data:{labels:c.months.map(o=>o.label),datasets:ds},options:{plugins:{legend:{labels:{color:tx,boxWidth:12}}},scales:{x:{stacked:true,ticks:{color:tx},grid:{display:false}},y:{stacked:true,ticks:{color:tx},grid:{color:grid},beginAtZero:true}}}});
+  const c=summaryCalc(); if(!c.months.length) return;
+  const ds=SERIES.filter(([k])=>c.months.some(o=>o[k])).map(([k,l,v])=>({label:l,data:c.months.map(o=>+(o[k]||0).toFixed(2)),color:css(v)}));
+  barChart(c.months.map(o=>o.label),ds,c.full.length?{label:'Среднее',data:c.months.map(()=>+c.avg.total.toFixed(2))}:null,true);
 }
 
-/* ---------- shared ---------- */
-function delBind(fn){
+/* ---------- chart ---------- */
+function barChart(labels,series,line,stacked){
+  if(!window.Chart||!$('ch')) return;
+  const tx=css('--text-2'), grid=css('--border'), font={family:css('--font'),size:13,weight:'500'};
+  const ds=series.map(s=>({label:s.label,data:s.data,backgroundColor:s.fc?s.fc.map(f=>f?s.color+'73':s.color):s.color,borderRadius:4,stack:stacked?'s':undefined,maxBarThickness:44}));
+  if(line) ds.push({label:line.label,type:'line',data:line.data,borderColor:tx,borderDash:[6,4],borderWidth:2,pointRadius:0});
+  const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  chart=new Chart($('ch'),{type:'bar',data:{labels,datasets:ds},options:{animation:rm?false:{duration:250},
+    plugins:{legend:{display:ds.length>1,position:'bottom',labels:{color:tx,font,boxWidth:12,boxHeight:12,padding:14}},tooltip:{titleFont:font,bodyFont:{...font,size:14},callbacks:{label:x=>` ${x.dataset.label}: ${fmt(x.parsed.y,x.parsed.y<10?2:0)}`}}},
+    scales:{x:{stacked,ticks:{color:tx,font,maxRotation:0,autoSkip:true,autoSkipPadding:8},grid:{display:false},border:{display:false}},y:{stacked,beginAtZero:true,ticks:{color:tx,font,callback:v=>fmt(v)},grid:{color:grid},border:{display:false}}}}});
+}
+
+/* ---------- app shell ---------- */
+function setStatus(t,err){ $('status').textContent=t||''; $('status').className=err?'err':''; }
+function delBind(fn,msg){
   $('view').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
-    if(b.dataset.sure){fn(b.dataset.del);save('Удалено.');} else {b.dataset.sure=1;b.textContent='Удалить?';}
+    if(b.dataset.sure){fn(b.dataset.del);save(msg);}
+    else {b.dataset.sure=1;b.classList.add('confirm');b.textContent='Удалить?';setTimeout(()=>{if(b.isConnected&&b.dataset.sure){delete b.dataset.sure;b.classList.remove('confirm');b.innerHTML=icon('x');}},4000);}
   });
 }
-function drawChart(labels,data,fc,norm){
-  const dark=matchMedia('(prefers-color-scheme:dark)').matches, grid=dark?'#2b313a':'#e5e7eb', tx=dark?'#9aa1ab':'#6b7280';
-  if(chart) chart.destroy();
-  if(!window.Chart) return;
-  const ds=[{label:'Факт',data,backgroundColor:fc.map(f=>f?'rgba(29,95,209,.45)':'#1d5fd1'),borderRadius:6}];
-  if(norm) ds.push({label:'Норма',type:'line',data:norm,borderColor:'#c2410c',borderDash:[5,4],pointRadius:0,borderWidth:2});
-  chart=new Chart($('ch'),{type:'bar',data:{labels,datasets:ds},options:{plugins:{legend:{display:!!norm,labels:{color:tx}}},scales:{x:{ticks:{color:tx},grid:{display:false}},y:{ticks:{color:tx},grid:{color:grid},beginAtZero:true}}}});
-}
-const TABS=[['sum','📊 Итого'],['power','⚡ Свет'],['water','💧 Вода'],['oil','🛢️ Масло'],['rent','🏡 Аренда'],['nk','🧾 Nebenkosten']];
+const TABS=[['sum','Итого'],['power','Свет'],['water','Вода'],['oil','Масло'],['rent','Аренда'],['nk','Nebenkosten']];
 function render(){
-  if(!TABS.some(t=>t[0]===tab)) tab='power';
-  $('tabs').innerHTML=TABS.map(([id,l])=>`<button class="${id===tab?'on':''}" data-t="${id}">${l}</button>`).join('');
-  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;try{history.replaceState(null,'','#'+tab);}catch(e){}render();});
-  if(chart){chart.destroy();chart=null;}
   norm();
+  if(!TABS.some(t=>t[0]===tab)) tab='sum';
+  $('hdr').innerHTML=`<button class="link" id="logout" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-2)">${icon('out')}Выйти</button>`;
+  $('logout').onclick=logout;
+  $('tabs').innerHTML=TABS.map(([id,l])=>`<button class="tab" data-t="${id}" ${id===tab?'aria-current="page"':''}>${icon(id)}${l}</button>`).join('');
+  $('tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;try{history.replaceState(null,'','#'+tab);}catch(e){}setStatus('');render();window.scrollTo(0,0);});
+  if(chart){chart.destroy();chart=null;}
   if(tab==='sum'){$('view').innerHTML=summaryView();summaryBind();}
-  else if(tab==='rent'){$('view').innerHTML=rentView();rentBind();}
+  else if(tab==='rent'||tab==='nk'){$('view').innerHTML=payView(tab);payBind(tab);}
   else if(tab==='oil'){$('view').innerHTML=oilView();oilBind();}
-  else if(tab==='nk'){$('view').innerHTML=nkView();nkBind();}
   else {$('view').innerHTML=meterView(tab);meterBind(tab);}
+  const a=$('tabs').querySelector('[aria-current]'); if(a&&a.scrollIntoView) a.scrollIntoView({block:'nearest',inline:'nearest'});
 }
+
+/* ---------- API ---------- */
 async function api(method, body){
   const r = await fetch('/api/state', {method, credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: body?JSON.stringify(body):undefined});
   if (r.status===401) { showLogin(); throw new Error('401'); }
@@ -327,37 +533,44 @@ async function api(method, body){
 }
 async function save(msg){
   render();
-  $('status').textContent='Сохраняю…';
+  setStatus('Сохраняю…');
   try{
     const r = await api('PUT', {rev: REV, data: S});
-    if (r.status===409){ $('status').textContent='Данные изменились на другом устройстве — загружаю свежие. Повторите ввод.'; await load(); return; }
-    if (!r.ok) throw new Error('HTTP '+r.status);
+    if (r.status===409){ setStatus('Данные изменились на другом устройстве. Загрузил свежие — внесите запись ещё раз.',true); await load(true); return; }
+    if (!r.ok) throw new Error('сервер ответил '+r.status);
     REV = (await r.json()).rev;
-    $('status').textContent = msg+' Сохранено.';
-  }catch(e){ if(e.message!=='401') $('status').textContent='Не удалось сохранить: '+e.message; }
+    setStatus(msg+' Сохранено.');
+  }catch(e){ if(e.message!=='401') setStatus('Не сохранилось: '+e.message+'. Проверьте интернет и повторите.',true); }
 }
-async function load(){
+async function load(keepStatus){
   try{
     const r = await api('GET');
-    if (r.status===404){ REV=0; render(); $('status').textContent='На сервере пока пусто — показаны начальные данные. Первое сохранение запишет их.'; return; }
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    const j = await r.json(); S = j.data; REV = j.rev; render(); $('status').textContent='';
-  }catch(e){ if(e.message!=='401') $('status').textContent='Не удалось загрузить: '+e.message; }
+    if (r.status===404){ REV=0; render(); setStatus('На сервере пока пусто — показаны начальные данные. Первое сохранение запишет их.'); return; }
+    if (!r.ok) throw new Error('сервер ответил '+r.status);
+    const j = await r.json(); S = j.data; REV = j.rev; render(); if(!keepStatus) setStatus('');
+  }catch(e){ if(e.message!=='401') setStatus('Не удалось загрузить данные: '+e.message+'.',true); }
 }
 function showLogin(err){
-  $('tabs').innerHTML=''; $('status').textContent='';
-  $('view').innerHTML=`<div class="card"><h2>🔑 Вход</h2><form id="f_login"><input type="password" id="pw" placeholder="Пароль" autocomplete="current-password" required><button>Войти</button></form><p class="mut" id="lerr">${err||''}</p></div>`;
+  $('tabs').innerHTML=''; $('hdr').innerHTML=''; setStatus('');
+  $('view').innerHTML=`<section class="card login"><h2>Вход</h2>
+    <form id="f_login" class="entry" style="grid-template-columns:1fr">
+      ${field('pw','Пароль','type="password" autocomplete="current-password" required autofocus')}
+      <p class="cap ${err?'bad':''}" id="lerr" role="alert" style="margin:0">${err||'На этом устройстве вход сохранится на 90 дней.'}</p>
+      <button class="btn" id="lbtn">Войти</button>
+    </form></section>`;
   $('f_login').onsubmit=async e=>{e.preventDefault();
-    $('lerr').textContent='Проверяю…';
+    $('lbtn').disabled=true; $('lbtn').textContent='Проверяю…';
     try{
       const r=await fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});
-      if(r.ok) load(); else showLogin(r.status===401?'Неверный пароль.':'Ошибка сервера ('+r.status+').');
-    }catch(err){ showLogin('Нет связи с сервером.'); }
+      if(r.ok) load(); else showLogin(r.status===401?'Пароль не подошёл. Попробуйте ещё раз.':'Сервер ответил '+r.status+'. Попробуйте позже.');
+    }catch(err){ showLogin('Нет связи с сервером. Проверьте интернет.'); }
   };
 }
 async function logout(){ try{await fetch('/api/logout',{method:'POST',credentials:'same-origin'});}catch(e){} showLogin('Вы вышли.'); }
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h&&h!==tab){tab=h;render();}});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{ if($('tabs').children.length) render(); });
 load();
 </script>
+<style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
 </body>
 </html>
